@@ -49,6 +49,10 @@ class MonitoringGeneratorService
         36 => ['bw' => 2369, 'dg' => 96],
         37 => ['bw' => 2466, 'dg' => 97],
         38 => ['bw' => 2563, 'dg' => 97],
+        39 => ['bw' => 2661, 'dg' => 98],
+        40 => ['bw' => 2758, 'dg' => 97],
+        41 => ['bw' => 2855, 'dg' => 97],
+        42 => ['bw' => 2952, 'dg' => 97],
         // ... tambahkan data standar sampai hari ke-36
     ];
     public function getStandardWeight()
@@ -57,41 +61,42 @@ class MonitoringGeneratorService
     }
 
     public function generateFromAyam($ayamId)
-{
-    $ayam = Ayam::findOrFail($ayamId);
-    $startDate = Carbon::parse($ayam->tanggal_masuk);
-
-    // Generate data untuk 36 hari
-    for ($day = 0; $day <= 36; $day++) {
-        $currentDate = $startDate->copy()->addDays($day);
-
-        // Ambil standar berat dan pertumbuhan untuk hari ini
-        $standard = $this->standardWeight[$day] ?? [
-            'bw' => $this->estimateWeight($day),
-            'dg' => $this->estimateDailyGain($day)
-        ];
-
-        // Buat record monitoring untuk hari ini
-        $monitoring = new MonitoringAyam();
-
-        $monitoring->ayam_id = $ayam->id_ayam;
-        $monitoring->age_day = $day;
-        $monitoring->tanggal = $currentDate;
-
-        // Hanya untuk hari ke-0
-        if ($day === 0) {
-            $monitoring->kandang_id = $ayam->kandang_id ?? null;
-            $monitoring->body_weight = 0;  // Nilai default untuk hari pertama
-            $monitoring->daily_gain = 0;   // Nilai default untuk hari pertama
-        } else {
-            $monitoring->kandang_id = $ayam->kandang_id ?? null;
-            $monitoring->body_weight = $standard['bw']; // Gunakan data standar untuk hari berikutnya
-            $monitoring->daily_gain = $standard['dg'];  // Gunakan data standar untuk hari berikutnya
+    {
+        $ayam = Ayam::findOrFail($ayamId);
+        $startDate = Carbon::parse($ayam->tanggal_masuk);
+        $rentangHari = $ayam->rentang_hari; // Ambil rentang hari dari data ayam
+    
+        // Generate data sesuai rentang hari yang diinput
+        for ($day = 0; $day <= $rentangHari; $day++) {
+            $currentDate = $startDate->copy()->addDays($day);
+    
+            // Ambil standar berat dan pertumbuhan untuk hari ini
+            $standard = $this->standardWeight[$day] ?? [
+                'bw' => $this->estimateWeight($day),
+                'dg' => $this->estimateDailyGain($day)
+            ];
+    
+            // Buat record monitoring untuk hari ini
+            $monitoring = new MonitoringAyam();
+    
+            $monitoring->ayam_id = $ayam->id_ayam;
+            $monitoring->age_day = $day;
+            $monitoring->tanggal = $currentDate;
+    
+            // Hanya untuk hari ke-0
+            if ($day === 0) {
+                $monitoring->kandang_id = $ayam->kandang_id ?? null;
+                $monitoring->body_weight = 0;  // Nilai default untuk hari pertama
+                $monitoring->daily_gain = 0;   // Nilai default untuk hari pertama
+            } else {
+                $monitoring->kandang_id = $ayam->kandang_id ?? null;
+                $monitoring->body_weight = $standard['bw']; 
+                $monitoring->daily_gain = $standard['dg'];
+            }
+    
+            $monitoring->save();
         }
-
-        $monitoring->save();
     }
-}
 
     private function estimateWeight($day)
     {

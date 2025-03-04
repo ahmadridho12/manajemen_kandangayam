@@ -19,6 +19,8 @@ class PakanMasuk extends Model
         'masuk',
         'berat_zak',
         'total_berat',
+        'total_harga_pakan',
+
 
 
     ];

@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 use App\Models\Sekat;
 use App\Models\Monitoring;
 use App\Models\Kandang;
+use App\Models\HargaDoc;
+use App\Models\HargaAyam;
+
 use Illuminate\Support\Carbon;
 class Ayam extends Model
 {
@@ -21,6 +24,9 @@ class Ayam extends Model
         'qty_ayam', // Menambahkan kolom qty
         'status', // Menambahkan kolom status
         'kandang_id', // Menambahkan kolom kandang_id
+        'rentang_hari',
+        'doc_id',
+        'total_harga',
     ];
 
 
@@ -31,6 +37,15 @@ class Ayam extends Model
     public function kandang()
     {
         return $this->belongsTo(Kandang::class, 'kandang_id', 'id_kandang'); // Relasi ke model Sekat berdasarkan kandang_id
+    }
+    public function hargaAyam()
+{
+    return $this->hasOne(HargaAyam::class, 'ayam_id', 'id_ayam');
+}
+
+    public function doc()
+    {
+        return $this->belongsTo(HargaDoc::class, 'doc_id', 'id_doc');
     }
 
     public function monitoring()

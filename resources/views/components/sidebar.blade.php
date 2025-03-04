@@ -220,7 +220,12 @@
                             data-i18n="{{ __('Pakan Transfer') }}">{{ __('Pakan Transfer') }}</div>
                     </a>
                 </li>
-                
+                <li class="menu-item {{ \Illuminate\Support\Facades\Route::is('pakan.obat.*') || \Illuminate\Support\Facades\Route::is('transaction.disposition.*') ? 'active' : '' }}">
+                    <a href="{{ route('pakan.obat.index') }}" class="menu-link">
+                        <div
+                            data-i18n="{{ __('Obat') }}">{{ __('Obat') }}</div>
+                    </a>
+                </li>
                
             </ul>
         </li>
@@ -297,6 +302,16 @@
                 <li class="menu-item {{ \Illuminate\Support\Facades\Route::is('lainnya.abk.*') ? 'active' : '' }}">
                     <a href="{{ route('lainnya.abk.index') }}" class="menu-link">
                         <div data-i18n="{{ __('Petugas Kandang') }}">{{ __('Petugas Kandang') }}</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ \Illuminate\Support\Facades\Route::is('lainnya.doc.*') ? 'active' : '' }}">
+                    <a href="{{ route('lainnya.doc.index') }}" class="menu-link">
+                        <div data-i18n="{{ __('DOC') }}">{{ __('DOC') }}</div>
+                    </a>
+                </li>
+                <li class="menu-item {{ \Illuminate\Support\Facades\Route::is('lainnya.hargaayam.*') ? 'active' : '' }}">
+                    <a href="{{ route('lainnya.hargaayam.index') }}" class="menu-link">
+                        <div data-i18n="{{ __('Harga Ayam') }}">{{ __('Harga Ayam') }}</div>
                     </a>
                 </li>
                 {{-- <li class="menu-item {{ \Illuminate\Support\Facades\Route::is('lainnya.sekat.*') ? 'active' : '' }}">

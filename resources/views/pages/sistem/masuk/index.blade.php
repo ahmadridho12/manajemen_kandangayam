@@ -8,7 +8,9 @@
         const periode = $(this).data('periode');
         const tanggal_masuk = $(this).data('tanggal_masuk');
         const tanggal_selesai = $(this).data('tanggal_selesai');
+        const qty_ayam = $(this).data('rentang_hari');
         const qty_ayam = $(this).data('qty_ayam');
+        const qty_ayam = $(this).data('harga');
         const status = $(this).data('status');
         const kandang_id = $(this).data('kandang_id');
         
@@ -19,17 +21,19 @@
         $('#periode').val(periode);
         $('#tanggal_masuk').val(tanggal_masuk);
         $('#tanggal_selesai').val(tanggal_selesai);
+        $('#rentang_hari').val(rentang_hari);
         $('#qty_ayam').val(qty_ayam);
         $('#status').val(status);
 
         // Perbaikan di sini - menggunakan kandang_id bukan kandang
         $('#edit-kandang').val(kandang_id);
+        $('#edit-doc').val(doc_id);
     });
 </script>
 @endpush
 
 @section('content')
-    <x-breadcrumb :values="[__('Ayam'), __('Ayam')]">
+    <x-breadcrumb :values="[__('Ayam'), __('Ayam Masuk')]">
         <a href="{{ route('sistem.masuk.create') }}" class="btn btn-primary">
             {{ __('Tambah Ayam') }}
         </a>
@@ -44,10 +48,14 @@
                         <th>{{ __('Periode') }}</th>
                         <th>{{ __('Tanggal Masuk') }}</th>
                         <th>{{ __('Tanggal Selesai') }}</th>
+                        <th>{{ __('Rentang Hari') }}</th>
                         {{-- <th>{{ __('Berat Awal') }}</th> --}}
                         <th>{{ __('Populasi') }}</th>
+                        <th>{{ __('Harga DOC') }}</th>
+                        <th>{{ __('Total') }}</th>
+                        {{-- <th>{{ __('Populasi') }}</th> --}}
                         <th>{{ __('Status') }}</th>
-                        <th>{{ __('Kandang ID') }}</th>
+                        <th>{{ __('Kandang') }}</th>
                         <th>{{ __('Aksi') }}</th>
                     </tr>
                 </thead>
@@ -59,8 +67,11 @@
                                 <td>{{ $ayam->periode }}</td>
                                 <td>{{ $ayam->tanggal_masuk }}</td>
                                 <td>{{ $ayam->tanggal_selesai }}</td>
+                                <td>{{ $ayam->rentang_hari }}</td>
                                 {{-- <td>{{ $ayam->berat_awal }}</td> --}}
                                 <td>{{ $ayam->qty_ayam }}</td>
+                                <td>{{number_format( $ayam->doc->harga, 0.2 , '.','.' )}} 
+                                <td>Rp.{{number_format( $ayam->total_harga, 0.2 , '.','.' )}} </td>
                                 <td>{{ $ayam->status }}</td>
                                 <td>{{ $ayam->kandang->nama_kandang }}</td>
                                 <td>
@@ -69,7 +80,9 @@
                                             data-periode="{{ $ayam->periode }}"
                                             data-tanggal_masuk="{{ $ayam->tanggal_masuk }}"
                                             data-tanggal_selesai="{{ $ayam->tanggal_selesai }}"
+                                            data-rentang_hari="{{ $ayam->rentang_hari }}"
                                             data-qty_ayam="{{ $ayam->qty_ayam }}"
+                                            data-doc_id="{{ $ayam->doc_id }}"
                                             data-status="{{ $ayam->status }}"
                                             data-kandang_id="{{ $ayam->kandang_id }}"
                                             data-bs-toggle="modal"
@@ -79,7 +92,7 @@
                                     <form action="{{ route('sistem.masuk.destroy', $ayam->id_ayam) }}" method="post" class="d-inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-danger btn-sm btn-delete" type="submit">Hapus</button>
+                                        <button class="btn btn-danger btn-sm btn-delete" type="button">Hapus</button>
                                     </form>
                                     
                                     
@@ -123,10 +136,9 @@
                         <input type="date" class="form-control" id="tanggal_masuk" name="tanggal_masuk" required>
                     </div>
                     <div class="mb-3">
-                        <label for="tanggal_selesai" class="form-label">{{ __('Tanggal Selesai') }}</label>
-                        <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai" required>
+                        <label for="rentang_hari" class="form-label">Rentang Hari</label>
+                        <input type="number" class="form-control" id="rentang_hari" name="rentang_hari" required>
                     </div>
-                   
                     <div class="mb-3">
                         <label for="qty_ayam" class="form-label">{{ __('Jumlah') }}</label>
                         <input type="number" class="form-control" id="qty_ayam" name="qty_ayam" required>
@@ -139,6 +151,14 @@
                         </select>
                     </div>
                     
+                    <div class="mb-3">
+                        <label class="form-label">Harga</label>
+                        <select class="form-control" name="doc_id" id="edit-doc">
+                            @foreach($docs as $doc)
+                                <option value="{{ $doc->id_doc }}">{{ $doc->harga }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Kandang</label>
                         <select class="form-control" name="kandang_id" id="edit-kandang">

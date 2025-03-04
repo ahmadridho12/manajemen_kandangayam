@@ -12,7 +12,7 @@ class PakanTransfer extends Model
 {
     use HasFactory;
 
-    protected $table = 'pakan_transferS';
+    protected $table = 'pakan_transfers';
     protected $primaryKey = 'id';
     
     protected $fillable = [

@@ -86,30 +86,35 @@ class PopulasiGeneratorService {
     }
     
     public function updatePopulasiByPanen(Panen $panen) {
-        $tanggalPanen = Carbon::parse($panen->tanggal_panen);
-    
+        // Konversi tanggal panen ke string dengan format Y-m-d
+        $tanggalPanenStr = Carbon::parse($panen->tanggal_panen)->toDateString();
+        
+        // Ambil record populasi berdasarkan ayam dan tanggal yang konsisten
         $populasi = Populasi::where('populasi', $panen->ayam_id)
-            ->whereDate('tanggal', $tanggalPanen->toDateString())
+            ->whereDate('tanggal', $tanggalPanenStr)
             ->first();
-    
+        
         if ($populasi) {
-            // Get all panens for this date
+            // Ambil semua data panen untuk tanggal tersebut dengan format yang sama
             $allPanens = Panen::where('ayam_id', $panen->ayam_id)
-                ->whereDate('tanggal_panen', $tanggalPanen)
+                ->whereDate('tanggal_panen', $tanggalPanenStr)
                 ->get();
             
-            // Calculate total panen quantity
+            // Hitung total quantity panen untuk tanggal itu
             $totalPanenQuantity = $allPanens->sum('quantity');
             
-            // Sync panen relations
-            $populasi->panens()->sync($allPanens->pluck('id_panen'));
+            // Update kolom panen (misalnya, simpan id panen terakhir)
+            $populasi->panen = $panen->id_panen; 
             
-            // Update quantities
+            // Update kolom qty_panen dengan total quantity panen
             $populasi->qty_panen = $totalPanenQuantity;
+            
+            // Update total sisa populasi: qty_now - (qty_mati + total panen)
             $populasi->total = $populasi->qty_now - ($populasi->qty_mati + $totalPanenQuantity);
             $populasi->save();
     
-            $this->updateSubsequentDays($panen->ayam_id, $tanggalPanen);
+            // Update record pada hari-hari berikutnya dengan format tanggal yang konsisten
+            $this->updateSubsequentDays($panen->ayam_id, $tanggalPanenStr);
         }
     }
     
@@ -131,4 +136,5 @@ class PopulasiGeneratorService {
             $previousTotal = $record->total;
         }
     }
+    
 }

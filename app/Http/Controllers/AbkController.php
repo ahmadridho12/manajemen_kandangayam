@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 use App\Models\Abk;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-
+use TheSeer\Tokenizer\Exception;
 class AbkController extends Controller
 {
     //
@@ -82,9 +83,29 @@ class AbkController extends Controller
 
 
     // Menghapus kandang
-    public function destroy(Abk $abk)
+    // public function destroy($id_abk)
+    // {
+        
+    //     $abk = Abk::findOrFail($id_abk);
+    //     $abk->delete();
+        
+    //     return redirect()->route('lainnya.abk.index')->with('success', 'Petugas berhasil dihapus.');
+    // }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param User $user
+     * @return RedirectResponse
+     * @throws \Exception
+     */
+    public function destroy(Abk $abk): RedirectResponse
     {
-        $abk->delete();
-        return redirect()->route('lainnya.abk.index')->with('success', 'Petugas berhasil dihapus.');
+        try {
+            $abk->delete();
+            return back()->with('success', __('menu.general.success'));
+        } catch (\Throwable $exception) {
+            return back()->with('error', $exception->getMessage());
+        }
     }
 }

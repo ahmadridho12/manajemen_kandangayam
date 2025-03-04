@@ -27,13 +27,29 @@
                 <div class="col-sm-12 col-12 col-md-6 col-lg-3">
                     <x-input-form name="tanggal_masuk" :label="__('Tanggal Masuk')" type="date" />
                 </div>
-                <div class="col-sm-12 col-12 col-md-6 col-lg-3">
+                {{-- <div class="col-sm-12 col-12 col-md-6 col-lg-3">
                     <x-input-form name="tanggal_selesai" :label="__('Tanggal Selesai')" type="date" />
+                </div> --}}
+                <div class="col-sm-12 col-12 col-md-6 col-lg-3">
+                    <x-input-form name="rentang_hari" :label="__('Rentang Hari')" type="number" />
                 </div>
                 <div class="col-sm-12 col-12 col-md-6 col-lg-3">
                     <x-input-form name="qty_ayam" :label="__('Populasi')" type="number" />
                 </div>
+                {{-- <div class="col-sm-12 col-12 col-md-6 col-lg-3">
+                    <x-input-form name="harga" :label="__('Harga')" type="number" step="0.01" />
+                </div> --}}
+                
                 <!-- Bagian yang Meminta -->
+                <div class="col-sm-12 col-12 col-md-6 col-lg-3">
+                    <label for="doc_id" class="form-label">{{ __('Harga DOC') }}</label>
+                    <select name="doc_id" id="id_doc" class="form-control">
+                        @foreach($docs as $doc)
+                            <option value="{{ $doc->id_doc}}">{{ $doc->harga }}</option>
+                        @endforeach
+                    </select>
+                    
+                </div>
                 <div class="col-sm-12 col-12 col-md-6 col-lg-3">
                     <label for="kandang_id" class="form-label">{{ __('Nama Kandang') }}</label>
                     <select name="kandang_id" id="id_kandang" class="form-control">

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 use App\Models\Ayam;
+use App\Models\HargaAyam;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -12,8 +14,15 @@ class Panen extends Model
 
     protected $table = 'panen';
     protected $primaryKey = 'id_panen'; // Menentukan primary key
-    protected $fillable = ['ayam_id', 'tanggal_panen', 'quantity', 'berat_total', 'atas_nama', 'no_panen', 'foto'];
-
+    protected $fillable = [
+        'ayam_id', 'tanggal_panen', 'quantity', 'atas_nama', 'no_panen', 'berat_total', 'rata_berat', 'harga_id', 'total_panen', 'foto'
+    ];
+    
+    public function hargaAyam()
+    {
+        return $this->belongsTo(HargaAyam::class, 'harga_id', 'id_harga');
+    }
+    
     public function ayam()
 {
     return $this->belongsTo(Ayam::class, 'ayam_id', 'id_ayam');

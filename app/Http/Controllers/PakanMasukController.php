@@ -70,6 +70,9 @@ class PakanMasukController extends Controller
         return view('pages.pakan.pakanmasuk.add', [
             'ayams' => $ayams,
             'pakans' => $pakans,
+            'total_berat' => 0, // Tambahin ini biar gak undefined
+            'total_harga_pakan' => 0, // Tambahin ini sekalian
+            
 
         ]); 
     }
@@ -92,6 +95,12 @@ class PakanMasukController extends Controller
         // Hitung total_berat
         $total_berat = $masuk * $berat_zak;
 
+        // Ambil harga dari tabel Pakan
+        $harga_pakan = Pakan::where('id_pakan', $request->input('pakan_id'))->value('harga');
+        
+        // Hitung total_harga
+        $total_harga_pakan = $request->total_berat * $harga_pakan;
+
         $pakan_masuk = new PakanMasuk();
         $pakan_masuk->ayam_id = $request->input('ayam_id');
         $pakan_masuk->pakan_id = $request->input('pakan_id');
@@ -99,8 +108,9 @@ class PakanMasukController extends Controller
         $pakan_masuk->masuk = $masuk;
         $pakan_masuk->berat_zak = $berat_zak;
         $pakan_masuk->total_berat = $total_berat;
+        $pakan_masuk->total_harga_pakan = $total_harga_pakan;
 
-        // Simpan PakanMasuk terlebih dahulu
+        // Simpan PakanMasuk
         $pakan_masuk->save();
 
         // Panggil proses dari MonitoringPakanGeneratorService
@@ -109,7 +119,7 @@ class PakanMasukController extends Controller
 
         DB::commit();
         return redirect()->route('pakan.pakanmasuk.index')
-            ->with('success', 'Data Panen berhasil ditambahkan dan populasi diperbarui.');
+            ->with('success', 'Data Pakan berhasil ditambahkan dan populasi diperbarui.');
     } catch (\Exception $e) {
         DB::rollback();
         return redirect()->back()
@@ -119,10 +129,16 @@ class PakanMasukController extends Controller
 }
 
 
-    public function edit(PakanMasuk $pakan_masuk)
-    {
-        return view('pakan_masuk.edit', compact('pakan_masuk'));
-    }
+
+public function edit(PakanMasuk $pakan_masuk)
+{
+    $ayams = Ayam::all();
+    $pakans = \App\Models\Pakan::all();
+    $total_berat = 0;           
+    $total_harga_pakan = 0;     
+    return view('pakan_masuk.edit', compact('pakan_masuk', 'ayams', 'pakans', 'total_berat', 'total_harga_pakan'));
+}
+
 
     // public function __construct(MonitoringPakanGeneratorService $monitoringPakanGeneratorService)
     // {
@@ -130,37 +146,47 @@ class PakanMasukController extends Controller
     // }
 
     public function update(Request $request, $id)
-    {
-        $request->validate([
-            'ayam_id' => 'required|exists:ayam,id_ayam',
-            'pakan_id' => 'required|exists:pakan,id_pakan',
-            'tanggal' => 'required|date',
-            'masuk' => 'required|integer|min:0',
-            'berat_zak' => 'required|integer|min:0',
-        ]);
+{
+    $request->validate([
+        'ayam_id'    => 'required|exists:ayam,id_ayam',
+        'pakan_id'   => 'required|exists:pakan,id_pakan',
+        'tanggal'    => 'required|date',
+        'masuk'      => 'required|integer|min:0',
+        'berat_zak'  => 'required|integer|min:0',
+    ]);
 
-        $pm = PakanMasuk::findOrFail($id);
-        
-        // Hitung total_berat
-        $total_berat = $request->masuk * $request->berat_zak;
+    $pm = PakanMasuk::findOrFail($id);
+    
+    // Simpan nilai original sebelum update
+    $oldMasuk = $pm->masuk;
+    $oldBeratZak = $pm->berat_zak;
+    
+    // Hitung total berat baru
+    $total_berat = $request->masuk * $request->berat_zak;
+    
+    // Ambil harga pakan dari tabel Pakan
+    $harga_pakan = Pakan::where('id_pakan', $request->pakan_id)->value('harga');
+    // Hitung total harga pakan baru
+    $total_harga_pakan = $request->total_berat * $harga_pakan;
 
-        $pm->update([
-            'ayam_id' => $request->ayam_id,
-            'pakan_id' => $request->pakan_id,
-            'tanggal' => $request->tanggal,
-            'masuk' => $request->masuk,
-            'berat_zak' => $request->berat_zak,
-            'total_berat' => $total_berat,
-        ]);
+    // Lakukan update data pakan masuk
+    $pm->update([
+        'ayam_id'            => $request->ayam_id,
+        'pakan_id'           => $request->pakan_id,
+        'tanggal'            => $request->tanggal,
+        'masuk'              => $request->masuk,
+        'berat_zak'          => $request->berat_zak,
+        'total_berat'        => $total_berat,
+        'total_harga_pakan'  => $total_harga_pakan, // update total harga
+    ]);
 
-        // Buat instance service langsung di method
-        $monitoringService = new MonitoringPakanGeneratorService();
-        $monitoringService->processPakanMasuk($pm, true);
+    // Panggil service dengan parameter update serta nilai original
+    $monitoringService = new MonitoringPakanGeneratorService();
+    $monitoringService->processPakanMasuk($pm, true, $oldMasuk, $oldBeratZak);
 
-        return redirect()->route('pakan.pakanmasuk.index')
-            ->with('success', 'Data Pakan Masuk berhasil diperbarui!');
-    }
-
+    return redirect()->route('pakan.pakanmasuk.index')
+                     ->with('success', 'Data Pakan Masuk berhasil diperbarui!');
+}
 
     public function destroy($id)
     {

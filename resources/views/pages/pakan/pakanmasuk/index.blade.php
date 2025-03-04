@@ -72,7 +72,8 @@
                     <th>{{ __('tanggal') }}</th>
                     <th>{{ __('Quantity') }}</th>
                     <th>{{ __('Berat') }}</th>
-                    <th>{{ __(' total') }}</th>
+                    <th>{{ __(' Total') }}</th>
+                    <th>{{ __(' Total Harga') }}</th>
                     <th>{{ __('Aksi') }}</th>
                 </tr>
                 </thead>
@@ -87,6 +88,7 @@
                             <td>{{ $pm->masuk }}</td>
                             <td>{{ $pm->berat_zak }}</td>
                             <td>{{ $pm->total_berat }}</td>
+                            <td>{{number_format( $pm->total_harga_pakan, 0 , '.','.' )}} 
                             <td>
                                 <button class="btn btn-info btn-sm btn-edit"
                                         data-id="{{ $pm->id }}"
@@ -103,7 +105,7 @@
                                 <form action="{{ route('pakan.pakanmasuk.destroy', $pm->id) }}" method="post" class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-danger btn-sm btn-delete" type="submit">Hapus</button>
+                                    <button class="btn btn-danger btn-sm btn-delete" type="button">Hapus</button>
                                 </form>
                                 
                                 
@@ -162,32 +164,64 @@
                 @method('PUT')
                 <div class="modal-header">
                     <h5 class="modal-title" id="editModalTitle">{{ __('menu.general.edit') }}</h5>
-                    <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
-                    ></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
                 <div class="modal-body">
                     <input type="hidden" name="id" id="id" value="">
-                    <select name="ayam_id" id="id_ayam" class="form-control">
-                        @foreach($ayams as $ayam)
-                            <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>
-                        @endforeach
-                    </select>
-                    <select name="pakan_id" id="id_pakan" class="form-control">
-                        @foreach($pakans as $pakan)
-                            <option value="{{ $pakan->id_pakan }}">{{ $pakan->nama_pakan }}</option>
-                        @endforeach
-                    </select>
-                    {{-- <x-input-form name="nama_kandang" :label="__('Nama Kandang')" id="nama_kandang"/> --}}
-                    <x-input-form name="tanggal" :label="__('Tanggal ')" type="date" id="tanggal"/>
-                    <x-input-form name="masuk" :label="__('Jumlah ')" type="number" id="masuk"/>
-                    <x-input-form name="berat_zak" :label="__('Berat Per Zak ')" type="number" id="berat_zak"/>
-                    {{-- <x-input-form name="tanggal_selesai" :label="__('Tanggal Selesai')" type="date" id="tanggal_selesai"/> --}}
+                    
+                    <!-- Periode -->
+                    <div class="mb-3">
+                        <label for="id_ayam" class="form-label">{{ __('Periode') }}</label>
+                        <select name="ayam_id" id="id_ayam" class="form-control">
+                            @foreach($ayams as $ayam)
+                                <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <!-- Nama Pakan -->
+                    <div class="mb-3">
+                        <label for="id_pakan" class="form-label">{{ __('Nama Pakan') }}</label>
+                        <select name="pakan_id" id="id_pakan" class="form-control">
+                            @foreach($pakans as $pakan)
+                                <option value="{{ $pakan->id_pakan }}">{{ $pakan->nama_pakan }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <!-- Tanggal -->
+                    <div class="mb-3">
+                        <x-input-form name="tanggal" :label="__('Tanggal')" type="date" id="tanggal"/>
+                    </div>
+                    
+                    <!-- Harga (readonly) -->
+                    <div class="mb-3">
+                        <label for="harga" class="form-label">{{ __('Harga') }}</label>
+                        <input type="number" class="form-control" id="harga" name="harga" value="{{ old('harga') }}" readonly/>
+                    </div>
+                    
+                    <!-- Jumlah -->
+                    <div class="mb-3">
+                        <x-input-form name="masuk" :label="__('Jumlah')" id="masuk" type="number"/>
+                    </div>
+                    
+                    <!-- Berat Per Zak -->
+                    <div class="mb-3">
+                        <x-input-form name="berat_zak" :label="__('Berat Per Zak')" id="berat_zak" type="number" step="0.01"/>
+                    </div>
+                    
+                    <!-- Total Berat (readonly) -->
+                    <div class="mb-3">
+                        <x-readonly-input name="total_berat" :label="'Total Berat'" :value="old('total_berat')" type="text"/>
+                    </div>
+                    
+                    <!-- Total Harga (readonly) -->
+                    <div class="mb-3">
+                        <x-readonly-input name="total_harga_pakan" :label="'Total Harga'" :value="old('total_harga_pakan')" type="text"/>
+                    </div>
                 </div>
+                
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                         {{ __('menu.general.cancel') }}
@@ -197,4 +231,48 @@
             </form>
         </div>
     </div>
+    
+    @section('scripts')
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const pakanSelect = document.getElementById("id_pakan");
+            const hargaInput = document.getElementById("harga");
+    
+            // Update harga saat pakan dipilih
+            if (pakanSelect) {
+                pakanSelect.addEventListener("change", function () {
+                    const pakans = @json($pakans);
+                    const selectedPakan = pakans.find(p => p.id_pakan == this.value);
+                    if (selectedPakan) {
+                        hargaInput.value = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(selectedPakan.harga);
+                    } else {
+                        hargaInput.value = '';
+                    }
+                    hitungTotal();
+                });
+            }
+    
+            // Event hitung total saat jumlah atau berat berubah
+            $('#masuk, #berat_zak').on('keyup change', function () {
+                hitungTotal();
+            });
+    
+            function hitungTotal() {
+                let masuk = parseFloat($('#masuk').val().replace(/\./g, '')) || 0;
+                let berat_zak = parseFloat($('#berat_zak').val().replace(/\./g, '')) || 0;
+                let harga = parseFloat($('#harga').val().replace(/\./g, '')) || 0;
+    
+                let total_berat = masuk * berat_zak;
+                let total_harga_pakan = total_berat * harga;
+    
+                $('#total_berat').val(new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(total_berat));
+                $('#total_harga_pakan').val(new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(total_harga_pakan));
+            }
+    
+            // Trigger perubahan pakan agar harga langsung terisi saat modal dibuka
+            $('#id_pakan').trigger('change');
+        });
+    </script>
+    @endsection
+    
 @endsection

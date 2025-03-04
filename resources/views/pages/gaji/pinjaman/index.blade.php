@@ -67,7 +67,7 @@
                                     @csrf
                                     @method('DELETE')
                                     <button class="btn btn-danger btn-sm btn-delete"
-                                            type="submit">{{ __('menu.general.delete') }}</button>
+                                            type="button">{{ __('menu.general.delete') }}</button>
                                 </form>
                             </td>
                         </tr>

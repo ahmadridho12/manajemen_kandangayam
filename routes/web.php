@@ -108,9 +108,13 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::resource('/pakankeluar', \App\Http\Controllers\PakanKeluarController::class);
         Route::get('/pakankeluar/create', [PakanKeluarController::class, 'create'])->name('pakankeluar.create');
         Route::post('/pakankeluar/store', [PakanKeluarController::class, 'store'])->name('pakankeluar.store');
+        Route::delete('/pakankeluar/{id}', [PakanKeluarController::class, 'destroy'])->name('pakankeluar.destroy');
+        Route::get('/pakankeluar/getStokPakan/{ayam_id}/{pakan_id}', [PakanKeluarController::class, 'getStokPakan'])
+        ->name('pakankeluar.getStokPakan');
         Route::resource('/transferpakan', \App\Http\Controllers\PakanTransferController::class);
         Route::get('/transferpakan/create', [PakanTransferController::class, 'create'])->name('transferpakan.create');
         Route::post('/transferpakan/store', [PakanTransferController::class, 'store'])->name('transferpakan.store');
+        Route::resource('obat', \App\Http\Controllers\ObatController::class)->except(['show', 'create', 'edit']);
 
     });
     Route::prefix('performa')->as('performa.')->group(function () {
@@ -173,13 +177,15 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         
 
         Route::resource('keluar', \App\Http\Controllers\AyammatiController::class)->except(['show', 'create', 'edit']);
-
+        Route::get('/get-harga-ayam/{id}', [PanenController::class, 'getHargaAyam']); // Pindah di atas dulu
         Route::get('/panen', [PanenController::class, 'index'])->name('panen.index');
         Route::get('/panen/create', [PanenController::class, 'create'])->name('panen.create');
         Route::post('/panen/store', [PanenController::class, 'store'])->name('panen.store');
         Route::get('/panen/{id_panen}', [PanenController::class, 'show'])->name('panen.show');
         Route::get('/panen/{id_panen}/edit', [PanenController::class, 'edit'])->name('panen.edit');
         Route::put('panen/{id_panen}', [PanenController::class, 'update'])->name('panen.update');
+        // Route::get('/get-harga-ayam/{id}', [PanenController::class, 'getHargaAyam']);
+
 
         // Route::get('/permintaan/{id_permintaan}', [PermintaanController::class, 'show'])->name('permintaan.show');
         // Route::get('/permintaan/{id_permintaan}/print', [PermintaanController::class, 'print'])->name('permintaan.print');
@@ -240,6 +246,8 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::resource('pakan', \App\Http\Controllers\PakanController::class)->except(['show', 'create', 'edit']);
         Route::resource('sekat', \App\Http\Controllers\SekatController::class)->except(['show', 'create', 'edit']);
         Route::resource('abk', \App\Http\Controllers\AbkController::class)->except(['show', 'create', 'edit']);
+        Route::resource('doc', \App\Http\Controllers\HargadocController::class)->except(['show', 'create', 'edit']);
+        Route::resource('hargaayam', \App\Http\Controllers\HargaAyamController::class)->except(['show', 'create', 'edit']);
 
 
         // Hitung tarif

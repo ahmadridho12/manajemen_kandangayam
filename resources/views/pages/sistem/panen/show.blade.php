@@ -2,7 +2,7 @@
 
 @section('content')
     <x-breadcrumb
-        :values="[__('Panen'), __('Panen'), __('detail Panen')]">
+        :values="[__('Ayam'), __('Panen'), __('detail Panen')]">
         {{-- <a href="{{ route('create.permission.print', $permission->id_permission) }}" class="btn btn-primary">
             Print
         </a> --}}
@@ -20,23 +20,35 @@
                 <dl class="row mt-3">
 
                     <dt class="col-sm-3">{{ __('Periode') }}</dt>
-                    <dd class="col-sm-9">:{{ $panen->ayam->periode }}</dd>
+                    <dd class="col-sm-9">: {{ $panen->ayam->periode }}</dd>
                 
                     <dt class="col-sm-3">{{ __('Tanggal Panen') }}</dt>
-                    <dd class="col-sm-9">:{{ $panen->tanggal_panen }}</dd>
+                    <dd class="col-sm-9">:  {{ $panen->tanggal_panen }}</dd>
                 
                     <dt class="col-sm-3">{{ __('Jumlah') }}</dt>
-                    <dd class="col-sm-9">:{{ $panen->quantity }}</dd>
+                    <dd class="col-sm-9">: {{ $panen->quantity }}</dd>
                 
                     <dt class="col-sm-3">{{ __('Total Berat') }}</dt>
-                    <dd class="col-sm-9">:{{ $panen->berat_total}}</dd>
+                    <dd class="col-sm-9">: {{ $panen->berat_total}}</dd>
+
+                    <dt class="col-sm-3">{{ __('Rata -Rata Berat') }}</dt>
+                    <dd class="col-sm-9">: {{ $panen->rata_berat}}</dd>
+
+                    <dt class="col-sm-3">{{ __('Harga Per Ekor') }}</dt>
+                    <dd class="col-sm-9">: {{ number_format($panen->hargaAyam?->harga ?? 0, 0, ',', '.') }}</dd>
+
+                    <dt class="col-sm-3">{{ __('Total Terjual') }}</dt>
+                    <dd class="col-sm-9">: {{ number_format($panen->total_panen, 0, ',', '.') }}</dd>
 
                     <dt class="col-sm-3">{{ __('Do Atas Nama') }}</dt>
-                    <dd class="col-sm-9">:{{ $panen->atas_nama}}</dd>
+                    <dd class="col-sm-9">: {{ $panen->atas_nama}}</dd>
                 
                     <dt class="col-sm-3">{{ __('No Panen') }}</dt>
-                    <dd class="col-sm-9">:{{ $panen->no_panen }}</dd>
-                
+                    <dd class="col-sm-9">: {{ $panen->no_panen }}</dd>
+
+
+                    
+                   
                    
                 
                     @if($panen->foto)

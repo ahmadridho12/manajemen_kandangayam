@@ -4,18 +4,22 @@
     <script>
         $(document).on('click', '.btn-edit', function () {
             const id = $(this).data('id');
-            $('#editModal form').attr('action', '{{ route('lainnya.pakan.update', '') }}/' + id);
+            const status = $(this).data('status'); // Ambil status dari data atribut
+
+            $('#editModal form').attr('action', '{{ route('lainnya.hargaayam.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
-            $('#editModal input#nama_pakan').val($(this).data('nama_pakan'));
+            $('#editModal input#min_berat').val($(this).data('min_berat'));
+            $('#editModal input#max_berat').val($(this).data('max_berat'));
             $('#editModal input#harga').val($(this).data('harga'));
-          
+            // $('#editModal select#status').val(status);
         });
+        
     </script>
 @endpush
 
 @section('content')
     <x-breadcrumb
-        :values="[__('Pakan')]">
+        :values="[__('Harga Ayam')]">
         <button
             type="button"
             class="btn btn-primary btn-create"
@@ -30,32 +34,36 @@
             <table class="table">
                 <thead>
                 <tr><th>No</th>
-                    <th>{{ __('Nama Pakan') }}</th>
+                    <th>{{ __('Min Berat ') }}</th>
+                    <th>{{ __('Max Berat') }}</th>
                     <th>{{ __('Harga') }}</th>
+                    {{-- <th>{{ __('Status') }}</th> <!-- Tambahkan kolom status --> --}}
 
                     <th>{{ __('menu.general.action') }}</th>
                 </tr>
                 </thead>
                 @if($data && $data->count())
                     <tbody>
-                    @foreach($data as $p)
+                    @foreach($data as $hap)
                         <tr>
                             <td>{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
 
-                            <td>{{ $p->nama_pakan }}</td>
-                            <td>{{ $p->harga }}</td>
-  
+                            <td>{{ $hap->min_berat }}</td>
+                            <td>{{ $hap->max_berat }}</td>
+                            <td>{{ number_format($hap->harga, 0, ',', '.') ?? 'Tidak Ada' }}</td>
+                            
+                            
                             <td>
                                 <button class="btn btn-info btn-sm btn-edit"
-                                        data-id="{{ $p->id_pakan }}"
-                                        data-nama_pakan="{{ $p->nama_pakan }}"
-                                        data-harga="{{ $p->harga }}"
-                
+                                        data-id="{{ $hap->id_harga }}"
+                                        data-min_berat="{{ $hap->min_berat }}"
+                                        data-max_berat="{{ $hap->max_berat }}"
+                                        data-harga="{{ $hap->harga }}"
                                         data-bs-toggle="modal"
                                         data-bs-target="#editModal">
                                     {{ __('menu.general.edit') }}
                                 </button>
-                                <form action="{{ route('lainnya.pakan.destroy', $p->id_pakan) }}" class="d-inline" method="post">
+                                <form action="{{ route('lainnya.hargaayam.destroy', $hap->id_harga) }}" class="d-inline" method="post">
                                     @csrf
                                     @method('DELETE')
                                     <button class="btn btn-danger btn-sm btn-delete"
@@ -83,7 +91,7 @@
     <!-- Create Modal -->
     <div class="modal fade" id="createModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
-            <form class="modal-content" method="post" action="{{ route('lainnya.pakan.store') }}">
+            <form class="modal-content" method="post" action="{{ route('lainnya.hargaayam.store') }}">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="createModalTitle">{{ __('menu.general.create') }}</h5>
@@ -95,9 +103,11 @@
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <x-input-form name="nama_pakan" :label="__('Nama Pakan')"/>
-                    <x-input-form name="harga" :label="__('Harga')" type="number"/>
-
+                    
+                    <x-input-form name="min_berat" :label="__('Min Berat')" type="decimal"/>
+                    <x-input-form name="max_berat" :label="__('Max Berat')" type="decimal"/>
+                    <x-input-form name="harga" :label="__('Harga Jual')" type="number"/>
+                    
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
@@ -127,9 +137,10 @@
                 
                 <div class="modal-body">
                     <input type="hidden" name="id" id="id" value="">
-                    <x-input-form name="nama_pakan" :label="__('Nama Pakan')" id="nama_pakan"/>
-                    <x-input-form name="harga" :label="__('Harga')" id="nama_pakan" type="number"/>
-
+                                   
+                    <x-input-form name="min_berat" :label="__('Min Berat')" type="decimal"/>
+                    <x-input-form name="max_berat" :label="__('Max Berat')" type="decimal"/>
+                    <x-input-form name="harga" :label="__('Harga Jual')" type="number"/>                    
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">

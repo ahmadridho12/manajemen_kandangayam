@@ -43,208 +43,136 @@ class MonitoringPakanGeneratorService
         }
     }
     
-    public function processPakanMasuk(PakanMasuk $pakanMasuk, $isUpdate = false)
+    public function processPakanMasuk(PakanMasuk $pakanMasuk, $isUpdate = false, $oldMasuk = 0, $oldBeratZak = 0)
     {
-        DB::transaction(function() use ($pakanMasuk, $isUpdate) {
+        DB::transaction(function() use ($pakanMasuk, $isUpdate, $oldMasuk, $oldBeratZak) {
+            $tanggalStr = Carbon::parse($pakanMasuk->tanggal)->format('Y-m-d');
+            
+            // 1. Proses untuk MonitoringPakanDetail
+            $detailPakan = MonitoringPakanDetail::where('pakan_id', $pakanMasuk->pakan_id)
+                                                  ->where('ayam_id', $pakanMasuk->ayam_id)
+                                                  ->first();
+            
+            // Hitung nilai masuk dan berat zak baru
+            $selisihMasuk = $pakanMasuk->masuk;
+            $selisihBerat = $pakanMasuk->masuk * $pakanMasuk->berat_zak;
+            
             if ($isUpdate) {
-                // Hapus semua data lama dulu
-                $originalPakanMasuk = PakanMasuk::find($pakanMasuk->id);
-                if ($originalPakanMasuk) {
-                    // Debug untuk cek nilai
-                    Log::info('Original data:', [
-                        'masuk' => $originalPakanMasuk->masuk,
-                        'total_berat' => $originalPakanMasuk->total_berat
+                // Gunakan nilai original yang sudah disimpan sebelum update
+                $selisihMasuk = $pakanMasuk->masuk - $oldMasuk;
+                $selisihBerat = ($pakanMasuk->masuk * $pakanMasuk->berat_zak) - ($oldMasuk * $oldBeratZak);
+                
+                if ($detailPakan) {
+                    $detailPakan->update([
+                        'masuk'       => $detailPakan->masuk + $selisihMasuk,
+                        'berat_zak'   => $pakanMasuk->berat_zak,
+                        'total_berat' => $detailPakan->total_berat + $selisihBerat
                     ]);
-                    
-                    $this->reversePakanMasuk($originalPakanMasuk);
+                }
+            } else {
+                // Untuk data baru
+                if ($detailPakan) {
+                    $detailPakan->update([
+                        'masuk'       => $detailPakan->masuk + $pakanMasuk->masuk,
+                        'berat_zak'   => $pakanMasuk->berat_zak,
+                        'total_berat' => $detailPakan->total_berat + ($pakanMasuk->masuk * $pakanMasuk->berat_zak)
+                    ]);
+                } else {
+                    MonitoringPakanDetail::create([
+                        'ayam_id'     => $pakanMasuk->ayam_id,
+                        'pakan_id'    => $pakanMasuk->pakan_id,
+                        'masuk'       => $pakanMasuk->masuk,
+                        'berat_zak'   => $pakanMasuk->berat_zak,
+                        'total_berat' => $pakanMasuk->masuk * $pakanMasuk->berat_zak
+                    ]);
                 }
             }
-    
-            // Debug untuk cek nilai baru
-            Log::info('New data:', [
-                'masuk' => $pakanMasuk->masuk,
-                'total_berat' => $pakanMasuk->total_berat
-            ]);
-    
-            // Update MonitoringPakanDetail dengan nilai baru
-            $existingDetail = MonitoringPakanDetail::where('pakan_id', $pakanMasuk->pakan_id)
-                                                 ->where('ayam_id', $pakanMasuk->ayam_id)
-                                                 ->first();
             
-            if ($existingDetail) {
-                // Update langsung dengan nilai baru (bukan increment)
-                $existingDetail->update([
-                    'masuk' => $pakanMasuk->masuk,
-                    'berat_zak' => $pakanMasuk->berat_zak,
-                    'total_berat' => $pakanMasuk->masuk * $pakanMasuk->berat_zak
-                ]);
-            } else {
-                MonitoringPakanDetail::create([
-                    'ayam_id' => $pakanMasuk->ayam_id,
-                    'pakan_id' => $pakanMasuk->pakan_id,
-                    'masuk' => $pakanMasuk->masuk,
-                    'berat_zak' => $pakanMasuk->berat_zak,
-                    'total_berat' => $pakanMasuk->masuk * $pakanMasuk->berat_zak
-                ]);
-            }
-    
-            // Update monitoring harian
-            $dateStr = Carbon::parse($pakanMasuk->tanggal)->format('Y-m-d');
+            // 2. Update data monitoring untuk tanggal spesifik
             $monitoring = MonitoringPakan::where('ayam_id', $pakanMasuk->ayam_id)
-                                       ->whereDate('tanggal', $dateStr)
-                                       ->first();
-                                       
+                                         ->whereDate('tanggal', $tanggalStr)
+                                         ->first();
+            
             if (!$monitoring) {
-                throw new \Exception('Data monitoring tidak ditemukan untuk tanggal ' . $dateStr);
+                throw new \Exception('Data monitoring tidak ditemukan untuk tanggal ' . $tanggalStr);
             }
-    
-            // Update langsung dengan nilai baru (bukan increment)
+            
+            // Update total_masuk dan total_berat untuk tanggal ini saja
             $monitoring->update([
-                'total_masuk' => $pakanMasuk->masuk,
-                'total_berat' => $pakanMasuk->masuk * $pakanMasuk->berat_zak
+                'total_masuk' => $monitoring->total_masuk + $selisihMasuk,
+                'total_berat' => $monitoring->total_berat + $selisihBerat
             ]);
-    
-            $this->updateSisaPakan($pakanMasuk->ayam_id, $dateStr);
+            
+            // 3. Update nilai sisa untuk tanggal ini dan seterusnya
+            $this->updateAllSisaPakanAfterDate($pakanMasuk->ayam_id, $tanggalStr);
         });
     }
     
-    private function reversePakanMasuk(PakanMasuk $originalPakanMasuk)
-    {
-        // Reset detail ke 0 dulu
-        $detail = MonitoringPakanDetail::where('pakan_id', $originalPakanMasuk->pakan_id)
-                                     ->where('ayam_id', $originalPakanMasuk->ayam_id)
-                                     ->first();
-    
-        if ($detail) {
-            $detail->update([
-                'masuk' => 0,
-                'total_berat' => 0
-            ]);
-        }
-    
-        // Reset monitoring ke 0 dulu
-        $dateStr = Carbon::parse($originalPakanMasuk->tanggal)->format('Y-m-d');
-        $monitoring = MonitoringPakan::where('ayam_id', $originalPakanMasuk->ayam_id)
-                                   ->whereDate('tanggal', $dateStr)
-                                   ->first();
-    
-        if ($monitoring) {
-            $monitoring->update([
-                'keluar' => 0,
-                'total_berat' => 0
-            ]);
-        }
-    }
-
-
     // ProcessPakanKeluar.php
-    public function processPakanKeluar(PakanKeluar $pakanKeluar, $isUpdate = false)
-{
-   DB::transaction(function() use ($pakanKeluar, $isUpdate) {
-       // Variabel untuk menyimpan kuantitas asli
-       $originalQty = 0;
-
-       // Jika sedang proses update
-       if ($isUpdate) {
-           $originalPakanKeluar = PakanKeluar::find($pakanKeluar->id);
-           if ($originalPakanKeluar) {
-               // Simpan kuantitas asli sebelum diupdate
-               $originalQty = $originalPakanKeluar->qty;
-
-               // Kembalikan stok sebelumnya
-               $this->reversePakanKeluar($originalPakanKeluar); 
-           }
-       }
-
-       // Cari detail monitoring pakan yang sesuai
-       $existingDetail = MonitoringPakanDetail::where('pakan_id', $pakanKeluar->pakan_id)
-           ->where('ayam_id', $pakanKeluar->ayam_id)
-           ->lockForUpdate()
-           ->first();
-
-       if ($existingDetail) {
-           // Hitung ulang stok masuk
-           // Kurangi qty baru dan tambahkan kembali qty asli
-           $new_masuk = $existingDetail->masuk - ($pakanKeluar->qty - $originalQty);
-
-           
-           $existingDetail->update([
-               'masuk' => $new_masuk,
-               'berat_zak' => $pakanKeluar->berat_zak,
-               'total_berat' => $new_masuk * $pakanKeluar->berat_zak,
-               'updated_at' => now()
-           ]);
-       
+    public function processPakanKeluar(PakanKeluar $pakanKeluar, $isUpdate = false, $oldQty = 0)
+    {
+       DB::transaction(function() use ($pakanKeluar, $isUpdate, $oldQty) {
+           // Cari detail monitoring pakan yang sesuai
+           $existingDetail = MonitoringPakanDetail::where('pakan_id', $pakanKeluar->pakan_id)
+               ->where('ayam_id', $pakanKeluar->ayam_id)
+               ->lockForUpdate()
+               ->first();
     
-               // Log setelah update
+           if ($existingDetail) {
+               // Hitung selisih: jika update, gunakan selisih antara new qty dan oldQty; 
+               // jika create, gunakan qty baru
+               $difference = $isUpdate ? ($pakanKeluar->qty - $oldQty) : $pakanKeluar->qty;
+               // Update stok (masuk) dengan mengurangi selisih
+               $new_masuk = $existingDetail->masuk - $difference;
+    
+               $existingDetail->update([
+                   'masuk'       => $new_masuk,
+                   'berat_zak'   => $pakanKeluar->berat_zak,
+                   'total_berat' => $new_masuk * $pakanKeluar->berat_zak,
+                   'updated_at'  => now()
+               ]);
+    
                Log::info('Detail setelah update:', [
                    'masuk_after' => $existingDetail->fresh()->masuk
                ]);
            } else {
                MonitoringPakanDetail::create([
-                   'ayam_id' => $pakanKeluar->ayam_id,
-                   'pakan_id' => $pakanKeluar->pakan_id,
-                   'masuk' => $pakanKeluar->masuk,
-                   'berat_zak' => $pakanKeluar->berat_zak, 
-                   'total_berat' => $pakanKeluar->masuk * $pakanKeluar->berat_zak,
-                   'created_at' => now(),
-                   'updated_at' => now()
+                   'ayam_id'     => $pakanKeluar->ayam_id,
+                   'pakan_id'    => $pakanKeluar->pakan_id,
+                   'masuk'       => $pakanKeluar->qty,
+                   'berat_zak'   => $pakanKeluar->berat_zak,
+                   'total_berat' => $pakanKeluar->qty * $pakanKeluar->berat_zak,
+                   'created_at'  => now(),
+                   'updated_at'  => now()
                ]);
            }
-    
+        
            // Update monitoring harian
            $dateStr = Carbon::parse($pakanKeluar->tanggal)->format('Y-m-d');
            $monitoring = MonitoringPakan::where('ayam_id', $pakanKeluar->ayam_id)
                ->whereDate('tanggal', $dateStr)
-               ->lockForUpdate() // Tambahkan lock
+               ->lockForUpdate()
                ->first();
-                                      
+                                          
            if (!$monitoring) {
                throw new \Exception('Data monitoring tidak ditemukan untuk tanggal ' . $dateStr);
            }
-    
-           // Update langsung dengan nilai baru
+        
+           // Hitung total keluar (qty) dari semua record PakanKeluar pada tanggal tersebut
+           $newKeluar = PakanKeluar::where('ayam_id', $pakanKeluar->ayam_id)
+               ->whereDate('tanggal', $dateStr)
+               ->sum('qty');
+        
            $monitoring->update([
-               'keluar' => $pakanKeluar->qty,
+               'keluar'     => $newKeluar,
                'updated_at' => now()
            ]);
-    
+        
            $this->updateSisaPakan($pakanKeluar->ayam_id, $dateStr);
        });
     }
     
-    private function reversePakanKeluar(PakanKeluar $originalPakanKeluar)
-    {
-       $detail = MonitoringPakanDetail::where('pakan_id', $originalPakanKeluar->pakan_id)
-           ->where('ayam_id', $originalPakanKeluar->ayam_id)
-           ->lockForUpdate()
-           ->first();
     
-       if ($detail) {
-           // Kembalikan qty asli
-           $new_masuk = $detail->masuk + $originalPakanKeluar->qty;
-           $detail->update([
-               'masuk' => $new_masuk,
-               'total_berat' => $new_masuk * $detail->berat_zak,
-               'updated_at' => now()
-           ]);
-       }
-    
-       // Reset monitoring harian
-       $dateStr = Carbon::parse($originalPakanKeluar->tanggal)->format('Y-m-d');
-       $monitoring = MonitoringPakan::where('ayam_id', $originalPakanKeluar->ayam_id)
-           ->whereDate('tanggal', $dateStr)
-           ->lockForUpdate()
-           ->first();
-    
-       if ($monitoring) {
-           $monitoring->update([
-               'keluar' => 0,
-               'updated_at' => now()
-           ]);
-       }
-    }
-
     // public function processPakanKeluar(PakanKeluar $pakanKeluar, $isUpdate = false)
     // {
     //     DB::transaction(function() use ($pakanKeluar, $isUpdate) {
@@ -393,6 +321,38 @@ class MonitoringPakanGeneratorService
 
             return $transfer;
         });
+    }
+    // Fungsi untuk mengupdate sisa pakan untuk semua tanggal setelah perubahan
+    private function updateAllSisaPakanAfterDate($ayamId, $startDate)
+    {
+        // Ambil semua data monitoring setelah tanggal startDate (termasuk tanggal startDate)
+        $monitorings = MonitoringPakan::where('ayam_id', $ayamId)
+                                     ->whereDate('tanggal', '>=', $startDate)
+                                     ->orderBy('tanggal')
+                                     ->get();
+        
+        $runningSisa = 0;
+        
+        // Untuk tanggal pertama, ambil sisa dari tanggal sebelumnya jika ada
+        $previousMonitoring = MonitoringPakan::where('ayam_id', $ayamId)
+                                            ->whereDate('tanggal', '<', $startDate)
+                                            ->orderBy('tanggal', 'desc')
+                                            ->first();
+        
+        if ($previousMonitoring) {
+            $runningSisa = $previousMonitoring->sisa;
+        }
+        
+        foreach ($monitorings as $monitoring) {
+            // Hitung sisa baru: sisa sebelumnya + masuk - keluar
+            $newSisa = $runningSisa + $monitoring->total_masuk - $monitoring->keluar;
+            
+            // Update sisa di database
+            $monitoring->update(['sisa' => $newSisa]);
+            
+            // Perbarui running sisa untuk iterasi berikutnya
+            $runningSisa = $newSisa;
+        }
     }
     private function updateSisaPakan($ayam_id, $tanggal)
     {

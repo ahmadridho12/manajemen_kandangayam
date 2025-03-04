@@ -30,18 +30,19 @@ class PakanController extends Controller
     }
    
 
-    // // Menyimpan data kandang baru
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'nama_pakan' => 'required|string|max:255',
+    // Menyimpan data kandang baru
+    public function store(Request $request)
+    {
+        $request->validate([
+            'nama_pakan' => 'required|string|max:255',
+            'harga' => 'required|integer|min:1',
 
-    //     ]);
+        ]);
 
-    //     Pakan::create($request->all());
+        Pakan::create($request->all());
 
-    //     return redirect()->route('lainnya.pakan.index')->with('success', 'pakan berhasil ditambahkan.');
-    // }
+        return redirect()->route('lainnya.pakan.index')->with('success', 'pakan berhasil ditambahkan.');
+    }
 
     // Menampilkan form untuk mengedit kandang
     public function edit(Pakan $pakan)
@@ -54,7 +55,7 @@ class PakanController extends Controller
     {
         $request->validate([
             'nama_pakan' => 'required|string|max:255',
-         
+            'harga' => 'required|integer|min:1',
         ]);
 
         $pakan->update($request->all());

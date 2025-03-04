@@ -6,6 +6,7 @@ use App\Models\Ayam;
 // use App\Models\Sekat;
 use App\Models\Kandang;
 use App\Models\AyamMati;
+use App\Models\HargaDoc;
 use App\Models\Populasi;
 use App\Models\Panen;
 use App\Services\PopulasiGeneratorService;
@@ -39,6 +40,7 @@ class AyamController extends Controller
             'search' => $search,
             // 'sekats' => Sekat::all(),
             'kandangs' => Kandang::all(),
+            'docs' => HargaDoc::all(),
         ]);
     }
 
@@ -46,37 +48,52 @@ class AyamController extends Controller
     {
         // $sekats = Sekat::all();
         $kandangs = Kandang::all();
+        $docs = HargaDoc::all();
         // $sekats = Sekat::all(); // Mengambil semua sekat untuk dropdown
         return view('pages.sistem.masuk.add', [
             // 'sekats' => $sekats,
             'kandangs' => $kandangs,
+            'docs' => $docs,
         ]);
     }
 
     
 
-    public function store(Request $request)
-{
+    public function store(Request $request) {
         $request->validate([
             'periode' => 'required|string|max:255',
             'tanggal_masuk' => 'required|date',
-            'tanggal_selesai' => 'required|date|after_or_equal:tanggal_masuk',
+            'rentang_hari' => 'required|integer|min:1', // Tambahkan validasi untuk rentang hari
             'qty_ayam' => 'required|integer|min:0',
             'kandang_id' => 'required|integer',
+            'doc_id' => 'required|integer',
         ]);
-    
+        
         DB::beginTransaction();
         try {
+            // Hitung tanggal selesai berdasarkan rentang hari
+            $tanggal_selesai = Carbon::parse($request->tanggal_masuk)
+                ->addDays($request->rentang_hari)
+                ->format('Y-m-d');
+
+            // Ambil harga DOC dari tabel harga_doc berdasarkan doc_id yang dipilih
+            $harga_doc = HargaDoc::where('id_doc', $request->doc_id)->first()->harga;
+
+            // Hitung total harga ayam
+            $total_harga = $request->qty_ayam * $harga_doc;    
             // Simpan data ayam
             $ayam = Ayam::create([
                 'periode' => $request->periode,
                 'tanggal_masuk' => $request->tanggal_masuk,
-                'tanggal_selesai' => $request->tanggal_selesai,
+                'tanggal_selesai' => $tanggal_selesai,
+                'rentang_hari' => $request->rentang_hari, // Simpan rentang hari
                 'qty_ayam' => $request->qty_ayam,
+                'doc_id' => $request->doc_id,
+                'total_harga' => $total_harga,
                 'status' => 'active',
                 'kandang_id' => $request->kandang_id,
             ]);
-    
+            
             // Gunakan PopulasiGeneratorService untuk generate populasi
             $populasiService = new PopulasiGeneratorService();
             $populasiService->generateFromAyam($ayam->id_ayam);
@@ -85,9 +102,10 @@ class AyamController extends Controller
             $monitoringService = new MonitoringGeneratorService();
             $monitoringService->generateFromAyam($ayam->id_ayam);
             
-            // Generate data monitoring
-         $monitoringpakanService = new MonitoringPakanGeneratorService();
-         $monitoringpakanService->generateFromAyam($ayam->id_ayam);
+            // Generate data monitoring pakan
+            $monitoringpakanService = new MonitoringPakanGeneratorService();
+            $monitoringpakanService->generateFromAyam($ayam->id_ayam);
+    
             DB::commit();
             return redirect()->route('sistem.masuk.index')
                 ->with('success', 'Data ayam dan populasi berhasil disimpan!');
@@ -148,37 +166,71 @@ class AyamController extends Controller
     }
 
     public function update(Request $request, $id_ayam)
-    {
-        $request->validate([
-            // 'sekat_id' => 'required|exists:sekat,id_sekat',
-            'periode' => 'required|string|max:255',
-            'tanggal_selesai' => 'required|date',
-            'tanggal_masuk' => 'required|date',
-            'qty_ayam' => 'required|integer|min:1',
-            'status' => 'required|string',
-            'kandang.*.kandang_id' => 'required|exists:kandang,id_kandang',
-        ]);
+{
+    $request->validate([
+        'periode' => 'required|string|max:255',
+        'tanggal_masuk' => 'required|date',
+        'rentang_hari' => 'required|integer|min:1',
+        'qty_ayam' => 'required|integer|min:0',
+        'kandang_id' => 'required|integer',
+        'doc_id' => 'required|integer',
+        'status' => 'required|string',
+    ]);
+
+    DB::beginTransaction();
+    try {
         $ayam = Ayam::find($id_ayam);
         if (!$ayam) {
             return redirect()->route('sistem.masuk.index')->with('error', 'Ayam tidak ditemukan.');
         }
 
-        //simpan
+        // Hitung Tanggal Selesai
+        $tanggal_selesai = Carbon::parse($request->tanggal_masuk)
+            ->addDays($request->rentang_hari)
+            ->format('Y-m-d');
+
+        // Ambil Harga DOC
+        $harga_doc = HargaDoc::where('id_doc', $request->doc_id)->first()->harga;
+        
+        // Hitung Total Harga
+        $total_harga = $request->qty_ayam * $harga_doc;
+
+        // Update Data Ayam
         $ayam->update([
             'periode' => $request->periode,
-            'tanggal_selesai' => $request->tanggal_selesai,
             'tanggal_masuk' => $request->tanggal_masuk,
+            'tanggal_selesai' => $tanggal_selesai,
+            'rentang_hari' => $request->rentang_hari,
             'qty_ayam' => $request->qty_ayam,
+            'doc_id' => $request->doc_id,
+            'total_harga' => $total_harga,
             'status' => $request->status,
-            'qty_ayam' => $request->qty_ayam,
             'kandang_id' => $request->kandang_id,
         ]);
 
-            // Regenerate populasi data
+        // Regenerate Populasi
         $populasiService = new PopulasiGeneratorService();
-        $populasiService->generateFromAyam($id_ayam);
-        return redirect()->route('sistem.masuk.index')->with('success', 'Ayam berhasil diperbarui.');
+        $populasiService->generateFromAyam($ayam->id_ayam);
+
+        // Regenerate Monitoring
+        $monitoringService = new MonitoringGeneratorService();
+        $monitoringService->generateFromAyam($ayam->id_ayam);
+
+        // Regenerate Monitoring Pakan
+        $monitoringpakanService = new MonitoringPakanGeneratorService();
+        $monitoringpakanService->generateFromAyam($ayam->id_ayam);
+
+        DB::commit();
+        return redirect()->route('sistem.masuk.index')
+            ->with('success', 'Data ayam berhasil diperbarui!');
+    } catch (\Exception $e) {
+        DB::rollback();
+        return redirect()->back()
+            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+            ->withInput();
     }
+}
+
 
     public function destroy($id_ayam)
 {

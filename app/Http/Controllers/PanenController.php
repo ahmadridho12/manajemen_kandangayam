@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 use App\Models\Panen;
 use App\Models\Ayam;
+use App\Models\HargaAyam;
 use App\Models\Populasi;
 use Illuminate\Http\RedirectResponse; // Pastikan ini ditambahkan
+use Illuminate\Support\Facades\Storage;
 
 use Illuminate\Http\Request;
 use Illuminate\Contracts\View\View;
@@ -57,51 +59,63 @@ class PanenController extends Controller
 
     
     public function store(Request $request): RedirectResponse 
-    {
-        $request->validate([
-            'ayam_id' => 'required|exists:ayam,id_ayam',
-            'tanggal_panen' => 'required|date',
-            'quantity' => 'required|integer|min:0',
-            'atas_nama' => 'required|string|max:255',
-            'no_panen' => 'required|string|max:255',
-            'berat_total' => 'required|numeric|min:0',
-            'foto' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Foto tidak wajib
-        ]);
+{
+    $request->validate([
+        'ayam_id' => 'required|exists:ayam,id_ayam',
+        'tanggal_panen' => 'required|date',
+        'quantity' => 'required|integer|min:0',
+        'atas_nama' => 'required|string|max:255',
+        'no_panen' => 'required|string|max:255',
+        'berat_total' => 'required|numeric|min:0',
+        'foto' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+    ]);
     
-        DB::beginTransaction();
-        try {
-            $panen = new Panen();
-            $panen->ayam_id = $request->input('ayam_id');
-            $panen->tanggal_panen = $request->input('tanggal_panen');
-            $panen->quantity = $request->input('quantity');
-            $panen->atas_nama = $request->input('atas_nama');
-            $panen->no_panen = $request->input('no_panen');
-            $panen->berat_total = $request->input('berat_total');
-    
-            // Jika file foto di-upload, proses penyimpanan
-            if ($request->hasFile('foto')) {
-                $fotoPatch = $request->file('foto')->store('photos', 'public');
-                $panen->foto = $fotoPatch;
-            } else {
-                $panen->foto = null;
-            }
-            
-            $panen->save();
-    
-            // Update populasi menggunakan service
-            $populasiService = new PopulasiGeneratorService();
-            $populasiService->updatePopulasiByPanen($panen);
-    
-            DB::commit();
-            return redirect()->route('sistem.panen.index')
-                ->with('success', 'Data Panen berhasil ditambahkan dan populasi diperbarui.');
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
+    DB::beginTransaction();
+    try {
+        $panen = new Panen();
+        $panen->ayam_id = $request->ayam_id;
+        $panen->tanggal_panen = $request->tanggal_panen;
+        $panen->quantity = $request->quantity;
+        $panen->atas_nama = $request->atas_nama;
+        $panen->no_panen = $request->no_panen;
+        $panen->berat_total = $request->berat_total;
+
+        
+        // Hitung Rata Berat dan bulatkan ke 2 desimal
+        $rata_berat = round($request->berat_total / $request->quantity, 2);
+        $panen->rata_berat = $rata_berat;
+
+
+        // 🔍 Ambil Harga Otomatis dari Tabel Harga Ayam
+        $harga = HargaAyam::where('min_berat', '<=', $rata_berat)
+                          ->where('max_berat', '>=', $rata_berat)
+                          ->first();
+
+        if ($harga) {
+            $panen->harga_id = $harga->id_harga;
+            $panen->total_panen = $harga->harga * $request->berat_total;
+        } else {
+            throw new \Exception('Harga tidak ditemukan untuk berat rata-rata ini');
         }
+
+        // 🔥 Upload Foto
+        if ($request->hasFile('foto')) {
+            $foto = $request->file('foto')->store('photos', 'public');
+            $panen->foto = $foto;
+        }
+
+        $panen->save();
+          // Update populasi menggunakan service
+          $populasiService = new PopulasiGeneratorService();
+          $populasiService->updatePopulasiByPanen($panen);
+        DB::commit();
+        return redirect()->route('sistem.panen.index')->with('success', 'Panen berhasil ditambahkan');
+    } catch (\Exception $e) {
+        DB::rollback();
+        return redirect()->back()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
     }
+}
+
 
     public function show($id_panen): View
     {
@@ -156,51 +170,64 @@ class PanenController extends Controller
 }
 
 
-public function update(Request $request, $id_panen)
+public function update(Request $request, $id_panen): RedirectResponse
 {
-    // Validasi input
     $request->validate([
-        'ayam_id' => 'required',
-        'tanggal_panen' => 'required',
-        'quantity' => 'required',
-        'berat_total' => 'required',
-        'atas_nama' => 'required',
+        'ayam_id' => 'required|exists:ayam,id_ayam',
+        'tanggal_panen' => 'required|date',
+        'quantity' => 'required|integer|min:0',
+        'atas_nama' => 'required|string|max:255',
         'no_panen' => 'required|string|max:255',
-        'foto' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // Foto tidak wajib
+        'berat_total' => 'required|numeric|min:0',
+        'foto' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
     ]);
 
-    // Temukan permission berdasarkan ID
-    // dd($request->all()); // Menampilkan semua data yang diterima
+    DB::beginTransaction();
+    try {
+        $panen = Panen::findOrFail($id_panen);
+        $panen->ayam_id = $request->ayam_id;
+        $panen->tanggal_panen = $request->tanggal_panen;
+        $panen->quantity = $request->quantity;
+        $panen->atas_nama = $request->atas_nama;
+        $panen->no_panen = $request->no_panen;
+        $panen->berat_total = $request->berat_total;
 
-    $panen = Panen::findOrFail($id_panen);
+        // ✅ Hitung Rata Berat Lagi
+        $rata_berat = $request->berat_total / $request->quantity;
+        $panen->rata_berat = $rata_berat;
 
-    $panen->tanggal_panen = $request->tanggal_panen;
-    $panen->quantity = $request->quantity;
-    $panen->berat_total = $request->berat_total;
-    $panen->atas_nama = $request->atas_nama;
-    $panen->no_panen = $request->no_panen;
-    
-    // dd($request->all());
-    //ambil unit
-    $ayam = Ayam::findOrFail($request->ayam_id);
-    $panen->ayam_id = $ayam->id_ayam;
-    //ambil jabatan
-    // dd($request->all());
+        // 🔍 Ambil Harga Otomatis dari Tabel Harga Ayam
+        $harga = HargaAyam::where('min_berat', '<=', $rata_berat)
+                          ->where('max_berat', '>=', $rata_berat)
+                          ->first();
 
-    // Jika file foto di-upload, proses penyimpanan
-    if ($request->hasFile('foto')) {
-        $fotoPath = $request->file('foto')->store('photos', 'public');
-        $panen->foto = $fotoPath;
+        if ($harga) {
+            $panen->harga_id = $harga->id_harga; // Foreign Key Harga
+            $panen->total_panen = $harga->harga * $request->berat_total;
+        } else {
+            throw new \Exception('Harga tidak ditemukan untuk berat rata-rata ini');
+        }
+
+        // 🔥 Upload Foto Baru (Kalau Ada)
+        if ($request->hasFile('foto')) {
+            // Hapus Foto Lama
+            if ($panen->foto) {
+                Storage::disk('public')->delete($panen->foto);
+            }
+            $foto = $request->file('foto')->store('photos', 'public');
+            $panen->foto = $foto;
+        }
+
+        $panen->save();
+        // Update populasi menggunakan service
+        $populasiService = new PopulasiGeneratorService();
+        $populasiService->updatePopulasiByPanen($panen);
+        DB::commit();
+        return redirect()->route('sistem.panen.index')->with('success', 'Panen berhasil diupdate');
+    } catch (\Exception $e) {
+        DB::rollback();
+        return redirect()->back()->with('error', 'Gagal update: ' . $e->getMessage());
     }
-
-    // Simpan data ke database
-    $panen->save();
-
-    $populasiService = new PopulasiGeneratorService();
-    $populasiService->generateFromAyam($ayam->id_ayam);
-    
-    return redirect()->route('sistem.panen.index')
-    ->with('success', 'Data Panen berhasil diperbarui.');
 }
 
 

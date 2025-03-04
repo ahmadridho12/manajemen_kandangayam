@@ -12,6 +12,7 @@
             $('#editModal input#jabatan').val($(this).data('jabatan'));
             $('#editModal select#status').val(status);
         });
+        
     </script>
 @endpush
 
@@ -63,11 +64,11 @@
                                         data-bs-target="#editModal">
                                     {{ __('menu.general.edit') }}
                                 </button>
-                                <form action="{{ route('lainnya.abk.destroy', $abk->id_abk) }}" class="d-inline" method="post">
+                                <form action="{{ route('lainnya.abk.destroy', $abk) }}" class="d-inline" method="post">
                                     @csrf
                                     @method('DELETE')
                                     <button class="btn btn-danger btn-sm btn-delete"
-                                            type="submit">{{ __('menu.general.delete') }}</button>
+                                            type="button">{{ __('menu.general.delete') }}</button>
                                 </form>
                             </td>
                         </tr>

@@ -103,7 +103,7 @@
                                 <form action="{{ route('pakan.pakankeluar.destroy', $pk->id) }}" method="post" class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="btn btn-danger btn-sm btn-delete" type="submit">Hapus</button>
+                                    <button class="btn btn-danger btn-sm btn-delete" type="button">Hapus</button>
                                 </form>
                                 
                                 
@@ -142,16 +142,24 @@
                 
                 <div class="modal-body">
                     <input type="hidden" name="id" id="id" value="">
-                    <select name="ayam_id" id="id_ayam" class="form-control">
-                        @foreach($ayams as $ayam)
-                            <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>
-                        @endforeach
-                    </select>
-                    <select name="pakan_id" id="id_pakan" class="form-control">
-                        @foreach($pakans as $pakan)
-                            <option value="{{ $pakan->id_pakan }}">{{ $pakan->nama_pakan }}</option>
-                        @endforeach
-                    </select>
+                    <div class="form-group">
+                        <label for="id_ayam">Periode</label>
+                        <select name="ayam_id" id="id_ayam" class="form-control">
+                            @foreach($ayams as $ayam)
+                                <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="id_pakan">Nama Pakan</label>
+                        <select name="pakan_id" id="id_pakan" class="form-control">
+                            @foreach($pakans as $pakan)
+                                <option value="{{ $pakan->id_pakan }}">{{ $pakan->nama_pakan }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
                     {{-- <x-input-form name="nama_kandang" :label="__('Nama Kandang')" id="nama_kandang"/> --}}
                     <x-input-form name="tanggal" :label="__('Tanggal ')" type="date" id="tanggal"/>
                     <x-input-form name="qty" :label="__('Jumlah ')" type="number" id="qty"/>

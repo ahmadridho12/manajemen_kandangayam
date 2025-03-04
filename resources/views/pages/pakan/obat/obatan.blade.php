@@ -4,10 +4,12 @@
     <script>
         $(document).on('click', '.btn-edit', function () {
             const id = $(this).data('id');
-            $('#editModal form').attr('action', '{{ route('lainnya.pakan.update', '') }}/' + id);
+            $('#editModal form').attr('action', '{{ route('pakan.obat.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
-            $('#editModal input#nama_pakan').val($(this).data('nama_pakan'));
-            $('#editModal input#harga').val($(this).data('harga'));
+            $('#editModal input#kandang_id').val($(this).data('kandang_id'));
+            $('#editModal input#ayam_id').val($(this).data('ayam_id'));
+            $('#editModal input#nama_obat').val($(this).data('nama_obat'));
+            $('#editModal input#total').val($(this).data('total'));
           
         });
     </script>
@@ -15,7 +17,7 @@
 
 @section('content')
     <x-breadcrumb
-        :values="[__('Pakan')]">
+        :values="[__('Obat')]">
         <button
             type="button"
             class="btn btn-primary btn-create"
@@ -30,32 +32,35 @@
             <table class="table">
                 <thead>
                 <tr><th>No</th>
-                    <th>{{ __('Nama Pakan') }}</th>
-                    <th>{{ __('Harga') }}</th>
-
+                    <th>{{ __('Kandang') }}</th>
+                    <th>{{ __('Periode') }}</th>
+                    <th>{{ __('Nama Obat') }}</th>
+                    <th>{{ __('Total') }}</th>
                     <th>{{ __('menu.general.action') }}</th>
                 </tr>
                 </thead>
                 @if($data && $data->count())
                     <tbody>
-                    @foreach($data as $p)
+                    @foreach($data as $obt)
                         <tr>
                             <td>{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
 
-                            <td>{{ $p->nama_pakan }}</td>
-                            <td>{{ $p->harga }}</td>
-  
+                            <td>{{ $obt->kandang->nama_kandang }}</td>
+                            <td>{{ $obt->ayam->periode }}</td>
+                            <td>{{ $obt->nama_obat }}</td>
+                            <td>Rp. {{number_format( $obt->total, 0.2 , '.','.' )}}</td>
                             <td>
                                 <button class="btn btn-info btn-sm btn-edit"
-                                        data-id="{{ $p->id_pakan }}"
-                                        data-nama_pakan="{{ $p->nama_pakan }}"
-                                        data-harga="{{ $p->harga }}"
-                
+                                        data-id="{{ $obt->id_obat }}"
+                                        data-kandang_id="{{ $obt->kandang_id }}"
+                                        data-ayam_id="{{ $obt->ayam_id }}"
+                                        data-nama_obat="{{ $obt->nama_obat }}"
+                                        data-total="{{ $obt->total }}"
                                         data-bs-toggle="modal"
                                         data-bs-target="#editModal">
                                     {{ __('menu.general.edit') }}
                                 </button>
-                                <form action="{{ route('lainnya.pakan.destroy', $p->id_pakan) }}" class="d-inline" method="post">
+                                <form action="{{ route('pakan.obat.destroy', $obt->id_obat) }}" class="d-inline" method="post">
                                     @csrf
                                     @method('DELETE')
                                     <button class="btn btn-danger btn-sm btn-delete"
@@ -83,7 +88,7 @@
     <!-- Create Modal -->
     <div class="modal fade" id="createModal" data-bs-backdrop="static" tabindex="-1">
         <div class="modal-dialog">
-            <form class="modal-content" method="post" action="{{ route('lainnya.pakan.store') }}">
+            <form class="modal-content" method="post" action="{{ route('pakan.obat.store') }}">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="createModalTitle">{{ __('menu.general.create') }}</h5>
@@ -95,9 +100,24 @@
                     ></button>
                 </div>
                 <div class="modal-body">
-                    <x-input-form name="nama_pakan" :label="__('Nama Pakan')"/>
-                    <x-input-form name="harga" :label="__('Harga')" type="number"/>
-
+                    <div class="col-sm-12 col-12 col-md-6 col-lg-12">
+                        <label for="id_kandang" class="form-label">{{ __('Nama Kandang') }}</label>
+                        <select name="kandang_id" id="id_kandang" class="form-control">
+                            @foreach($kandangs as $kandang)
+                                <option value="{{ $kandang->id_kandang }}">{{ $kandang->nama_kandang }}</option>
+                            @endforeach
+                        </select>
+                    </div>  
+                    <div class="col-sm-12 col-12 col-md-6 col-lg-12">
+                        <label for="id_ayam" class="form-label">{{ __('Periode') }}</label>
+                        <select name="ayam_id" id="id_ayam" class="form-control">
+                            @foreach($ayams as $ayam)
+                                <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>
+                            @endforeach
+                        </select>
+                    </div>  
+                    <x-input-form name="nama_obat" :label="__('Nama Obat')" />
+                    <x-input-form name="total" :label="__('Total')" type="number"/>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
@@ -127,9 +147,24 @@
                 
                 <div class="modal-body">
                     <input type="hidden" name="id" id="id" value="">
-                    <x-input-form name="nama_pakan" :label="__('Nama Pakan')" id="nama_pakan"/>
-                    <x-input-form name="harga" :label="__('Harga')" id="nama_pakan" type="number"/>
-
+                    <div class="col-sm-12 col-12 col-md-6 col-lg-12">
+                        <label for="id_kandang" class="form-label">{{ __('Nama Kandang') }}</label>
+                        <select name="kandang_id" id="id_kandang" class="form-control">
+                            @foreach($kandangs as $kandang)
+                                <option value="{{ $kandang->id_kandang }}">{{ $kandang->nama_kandang }}</option>
+                            @endforeach
+                        </select>
+                    </div>  
+                    <div class="col-sm-12 col-12 col-md-6 col-lg-12">
+                        <label for="id_ayam" class="form-label">{{ __('Periode') }}</label>
+                        <select name="ayam_id" id="id_ayam" class="form-control">
+                            @foreach($ayams as $ayam)
+                                <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>
+                            @endforeach
+                        </select>
+                    </div>  
+                    <x-input-form name="nama_obat" :label="__('Nama Obat')" />
+                    <x-input-form name="total" :label="__('Total')" type="number"/>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">

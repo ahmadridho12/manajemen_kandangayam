@@ -477,6 +477,8 @@ function number_format(number, decimals = 0) {
                         <th>Total BB Panen (Kg)</th>
                         <th>BB Rata-rata (Kg)</th>
                         <th>Age Quantity</th>
+                        <th>Harga Per Ekor</th>
+                        <th>Total Terjual</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -489,28 +491,122 @@ function number_format(number, decimals = 0) {
                             <td>{{ number_format($record->total_bb_panen, 2) }}</td>
                             <td>{{ number_format($record->total_bb_panen / $record->jumlah_panen, 3) }}</td>
                             <td>{{ number_format($record->age_quantity) }}</td>
-
+                            <td>{{ number_format($record->harga, 2, ',', '.') }}</td>
+                            <td>{{ number_format($record->total_panen, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr class="table-active">
-                        {{-- <td colspan="2"><strong>Total</strong></td> --}}
-                        <tr class="table-active">
-                            <td colspan="2"><strong>Total</strong></td>
-                            <td><strong>{{ number_format($dataPanen['data']['total']['total_persen'] ?? 0, 3) }}%</strong></td>
-                            <td><strong>{{ number_format($dataPanen['data']['total']['total_jumlah'] ?? 0) }}</strong></td>
-                            <td>-</td>
-                            <td><strong>{{ number_format($dataPanen['data']['total']['total_bb'] ?? 0, 2) }}</strong></td>
-                            <td><strong>{{ number_format($dataPanen['data']['total']['total_age_quantity'] ?? 0) }}</strong></td>
-                        </tr>
-
+                        <td colspan="2"><strong>Total</strong></td>
+                        <td><strong>{{ number_format($dataPanen['data']['total']['total_persen'] ?? 0, 3) }}%</strong></td>
+                        <td><strong>{{ number_format($dataPanen['data']['total']['total_jumlah'] ?? 0) }}</strong></td>
+                        <td><strong>{{ number_format($dataPanen['data']['total']['total_bb'] ?? 0, 0) }}</strong></td>
                         <td>-</td>
+                        <td><strong>{{ number_format($dataPanen['data']['total']['total_age_quantity'] ?? 0) }}</strong></td>
+                        <td>
+                            <strong>{{ number_format($dataPanen['data']['total']['average_harga'] ?? 0, 0, ',', '.') }}</strong>
+                        </td>
+                        <td>
+                            <strong>{{ number_format($dataPanen['data']['total']['total_panen'] ?? 0, 0, ',', '.') }}</strong>
+                        </td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     </div>
+    @if(!empty($estimasiPembelian))
+    <h4>Estimasi Pembelian</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Uraian</th>
+                <th>QTY</th>
+                <th>Satuan</th>
+                <th>Harga</th>
+                <th>Jumlah</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- DOC -->
+            <tr>
+                <td>DOC</td>
+                <td>{{ number_format($ayam->qty_ayam) ?? 0 }}</td>
+                <td>Ekor</td>
+                <td>{{ number_format($ayam->doc->harga, 0, ',', '.') }} </td>
+                <td>Rp {{ number_format($estimasiPembelian['doc']['total_harga'] ?? 0) }}</td>
+            </tr>
+            <!-- Pakan -->
+            @foreach($estimasiPembelian['pakan'] as $pakan)
+                <tr>
+                    <td>{{ $pakan->nama_pakan }}</td>
+                    <td>{{ number_format($pakan->total_qty) ?? 0 }}</td>
+                    <td>Kg</td>
+                    <td>{{ number_format($pakan->harga, 0, ',', '.') }} </td>
+                    <td>Rp {{ number_format($pakan->total_harga) }}</td>
+                </tr>
+            @endforeach
+            <!-- Obat -->
+            <tr>
+                <td>Obat & Vitamin</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+                <td>Rp {{ number_format($estimasiPembelian['obat'] ?? 0) }}</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4"><strong>Total Pembelian</strong></td>
+                <td><strong>Rp {{ number_format($estimasiPembelian['total_pembelian'] ?? 0) }}</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+@endif
+@if(!empty($penjualan))
+    <h4>PENJUALAN</h4>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Uraian</th>
+                <th>QTY</th>
+                <th>Satuan</th>
+                <th>Harga Satuan</th>
+                <th>Jumlah</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>Penjualan Daging</td>
+                <td>{{ number_format($penjualan['penjualan_daging']['qty'] ?? 0) }}</td>
+                <td>Kg</td>
+                <td>Rp {{ number_format($penjualan['penjualan_daging']['harga_satuan'] ?? 0) }}</td>
+                <td>Rp {{ number_format($penjualan['penjualan_daging']['jumlah'] ?? 0) }}</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="5"><strong>TOTAL PENJUALAN</strong></td>
+                <td>Rp {{ number_format($penjualan['total_penjualan'] ?? 0) }}</td>
+            </tr>
+            <tr>
+                <td colspan="5">BONUS FCR</td>
+                <td>Rp {{ number_format($penjualan['bonus_fcr'] ?? 0) }}</td>
+            </tr>
+            <tr>
+                <td colspan="5">BONUS KEMATIAN</td>
+                <td>Rp {{ number_format($penjualan['bonus_kematian'] ?? 0) }}</td>
+            </tr>
+            <tr class="table-active">
+                <td colspan="5"><strong>LABA (PENJUALAN - PEMBELIAN)</strong></td>
+                <td><strong>Rp {{ number_format($penjualan['laba'] ?? 0) }}</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+@endif
+
 @else
     <div class="alert alert-info">
         Pilih periode untuk melihat data panen

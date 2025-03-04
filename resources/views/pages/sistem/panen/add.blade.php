@@ -25,10 +25,13 @@
                     <x-input-form name="tanggal_panen" :label="__('Tanggal Panen')" type="date"/>
                 </div>
                 <div class="col-sm-12 col-12 col-md-6 col-lg-4">
-                    <x-input-form name="quantity" :label="__('Jumlah')"/>
+                    <x-input-form name="quantity" :label="__('Jumlah')" type="number"/>
                 </div>
                 <div class="col-sm-12 col-12 col-md-6 col-lg-4">
-                    <x-input-form name="berat_total" :label="__('Berat')"/>
+                    <label for="berat_total">{{ __('Berat Total') }}</label>
+                    <input type="number" name="berat_total" id="berat_total" class="form-control" step="0.01" />
+                                        {{-- <x-input-form name="berat_total" :label="__('Total Berat')" /> --}}
+
                 </div>
                 
                 <div class="col-sm-12 col-12 col-md-6 col-lg-4">
