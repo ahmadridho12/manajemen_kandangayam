@@ -41,9 +41,9 @@
                         @endforeach
                     </select>
                 </div>  
-                <div class="col-sm-12 col-12 col-md-6 col-lg-6">
+                {{-- <div class="col-sm-12 col-12 col-md-6 col-lg-6">
                     <x-input-form name="hasil_pemeliharaan" :label="__('Hasil Pemeliharaan')" type="number" />
-                </div>
+                </div> --}}
                 <div class="col-sm-12 col-12 col-md-6 col-lg-6">
                     <x-input-form name="bonus_per_orang" :label="__('Bonus')" type="number" />
                 </div>

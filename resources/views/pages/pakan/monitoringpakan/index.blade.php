@@ -15,8 +15,8 @@
 
 @section('content')
     <x-breadcrumb
-        :values="[__('Monitoring Pakan')]">
-        {{-- <button
+    :values="[__('Pakan'), __('Monitoring Pakan')]">
+    {{-- <button
             type="button"
             class="btn btn-primary btn-create"
             data-bs-toggle="modal"

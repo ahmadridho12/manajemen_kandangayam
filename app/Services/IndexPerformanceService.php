@@ -8,6 +8,9 @@ use App\Models\AyamMati;
 use App\Models\PakanMasuk;
 use App\Models\PakanKeluar;
 use App\Models\Populasi;
+use App\Models\Pakan;
+use App\Models\MonitoringPakanDetail;
+
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -339,17 +342,12 @@ class IndexPerformanceService
 
     public function getEstimasiPembelian($ayamId)
 {
-    // 1. Ambil data ayam, termasuk kolom total_harga (DOC) dan doc_id
-    $ayam = Ayam::with('doc') // opsional, jika Anda ingin ambil data harga_doc juga
+    // 1. Ambil data ayam (DOC)
+    $ayam = Ayam::with('doc') // Pastikan relationship 'doc' sudah didefinisikan di model Ayam
                ->findOrFail($ayamId);
+    $docTotalHarga = $ayam->total_harga; // Misal: 83.400.000
 
-    // Nilai total_harga untuk DOC diambil langsung dari tabel ayam
-    // misalnya 83.400.000
-    $docTotalHarga = $ayam->total_harga; 
-    // doc_id bisa diakses dengan $ayam->doc_id
-    // jika Anda butuh hargaDoc->harga, misalnya $ayam->hargaDoc->harga
-
-    // 2. Group pakan dari tabel pakan_masuk
+    // 2. Ambil data pakan dari tabel pakan_masuk
     $pakanData = DB::table('pakan_masuk as pm')
         ->join('pakan as pk', 'pm.pakan_id', '=', 'pk.id_pakan')
         ->where('pm.ayam_id', $ayamId)
@@ -360,30 +358,56 @@ class IndexPerformanceService
             DB::raw('SUM(pm.total_berat) as total_qty'),
             DB::raw('SUM(pm.total_harga_pakan) as total_harga')
         ])
-        ->groupBy('pm.pakan_id', 'pk.nama_pakan')
+        ->groupBy('pm.pakan_id', 'pk.nama_pakan', 'pk.harga')
         ->get();
-
-    // Hitung total pakan
     $totalPakan = $pakanData->sum('total_harga');
 
     // 3. Ambil total obat dari tabel obat
     $totalObat = DB::table('obat')
         ->where('ayam_id', $ayamId)
-        ->sum('total');  // misal 5.000.000
+        ->sum('total');  // Misal: 5.000.000
 
-    // 4. Hitung total pembelian
-    $totalPembelian = $docTotalHarga + $totalPakan + $totalObat;
+    // 4. Ambil data pakan tersisa dari tabel monitoring_pakan_detail
+    //    (Misalnya, field 'masuk' di monitoring_pakan_detail menyimpan jumlah feed yang tersisa)
+   // Ambil data pakan tersisa berdasarkan total_berat dari monitoring_pakan_detail
+   $feedLeftover = DB::table('monitoring_pakan_detail')
+   ->select('pakan_id', DB::raw('SUM(total_berat) as sisa'))
+   ->where('ayam_id', $ayamId)
+   ->groupBy('pakan_id')
+   ->get();
 
-    // Return data siap tampil di Blade
-    return [
-        'doc' => [
-            'doc_id'      => $ayam->doc_id,       // jika Anda ingin menampilkan doc_id
-            'total_harga' => $docTotalHarga,      // kolom total_harga dari tabel ayam
-        ],
-        'pakan' => $pakanData,
-        'obat'  => $totalObat,
-        'total_pembelian' => $totalPembelian
-    ];
+$pakanTersisaDetail = [];
+foreach ($feedLeftover as $leftover) {
+   // Hanya masukkan jika sisa lebih dari 0
+   if ($leftover->sisa > 0) {
+       $pakan = DB::table('pakan')
+           ->select('nama_pakan', 'harga')
+           ->where('id_pakan', $leftover->pakan_id)
+           ->first();
+       if ($pakan) {
+           $pakanTersisaDetail[] = (object)[
+               'nama_pakan'  => $pakan->nama_pakan,
+               'total_berat' => $leftover->sisa,
+               'harga'       => $pakan->harga,
+               'total_cost'  => $leftover->sisa * $pakan->harga
+           ];
+       }
 }
+}
+
+// Tambahkan kunci 'pakan_tersisa_detail' ke array yang dikembalikan
+return [
+'doc' => [
+    'doc_id'      => $ayam->doc_id,
+    'total_harga' => $docTotalHarga,
+],
+'pakan' => $pakanData,
+'obat'  => $totalObat,
+'total_pembelian' => $docTotalHarga + $totalPakan + $totalObat - array_sum(array_column($pakanTersisaDetail, 'total_cost')),
+'pakan_tersisa_detail' => $pakanTersisaDetail
+];
+
+}
+
 
 }

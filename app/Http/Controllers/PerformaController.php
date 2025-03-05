@@ -69,11 +69,11 @@ class PerformaController extends Controller
             $totalPembelian = $estimasiPembelian['total_pembelian']          ?? 0; // Contoh: 428284000 (rupiah)
     
             // Hitung bonus
-            $bonusFcr       = $avgHarga * 250;    // Contoh: 5.904.335
-            $bonusKematian  = $avgHarga * 100;    // Contoh: 2.361.734
+            $bonusFcr       = $totalBB * 250;    // Contoh: 5.904.335
+            $bonusKematian  = $totalBB * 100;    // Contoh: 2.361.734
     
             // Total penjualan (penjualan daging)
-            $totalPenjualan = $totalPanen; // Karena total_panen adalah hasil penjualan daging
+            $totalPenjualan = $totalBB * $avgHarga; // Karena total_panen adalah hasil penjualan daging
     
             // Laba = total penjualan + bonus - total pembelian
             $labaBersih     = $totalPenjualan + $bonusFcr + $bonusKematian - $totalPembelian;

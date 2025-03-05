@@ -21,7 +21,7 @@
     }
 </style>
 @section('content')
-<x-breadcrumb :values="[__('Monitoring Ayam'), __('Monitoring Ayam')]">
+<x-breadcrumb :values="[__('Monitoring '), __('Perkembangan Ayam')]">
     <a href="{{ route('inventory.monitoring.create') }}" class="btn btn-primary">
         {{ __('Tambah Ayam') }}
     </a>
@@ -109,35 +109,35 @@
                         <td>{{ $mt->age_day }}</td>
                         
                         <td class="{{ $mt->skat_1_bw_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_1_bw }}G
+                            {{ $mt->skat_1_bw }}
                         </td>
                         <td class="{{ $mt->skat_1_dg_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_1_dg }}G
+                            {{ $mt->skat_1_dg }}
                         </td>
                         
                         <td class="{{ $mt->skat_2_bw_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_2_bw }}G
+                            {{ $mt->skat_2_bw }}
                         </td>
                         <td class="{{ $mt->skat_2_dg_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_2_dg }}G
+                            {{ $mt->skat_2_dg }}
                         </td>
                         
                         <td class="{{ $mt->skat_3_bw_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_3_bw }}G
+                            {{ $mt->skat_3_bw }}
                         </td>
                         <td class="{{ $mt->skat_3_dg_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_3_dg }}G
+                            {{ $mt->skat_3_dg }}
                         </td>
                         
                         <td class="{{ $mt->skat_4_bw_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_4_bw }}G
+                            {{ $mt->skat_4_bw }}
                         </td>
                         <td class="{{ $mt->skat_4_dg_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_4_dg }}G
+                            {{ $mt->skat_4_dg }}
                         </td>
                         
-                        <td>{{ $mt->body_weight }}G</td>
-                        <td>{{ $mt->daily_gain }}G</td>
+                        <td>{{ $mt->body_weight }}</td>
+                        <td>{{ $mt->daily_gain }}</td>
                         
                    
                             

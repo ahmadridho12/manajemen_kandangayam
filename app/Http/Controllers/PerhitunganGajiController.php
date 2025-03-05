@@ -58,42 +58,43 @@ class PerhitunganGajiController extends Controller
     }
 
     public function store(Request $request)
-{
-    try {
-        $request->validate([
-            'kandang_id' => 'required|exists:kandang,id_kandang',
-            'ayam_id' => 'required|exists:ayam,id_ayam',
-            'hasil_pemeliharaan' => 'required|numeric', // Validasi untuk hasil_pemeliharaan
-            'bonus_per_orang' => 'required|numeric', // Validasi untuk bonus_per_orang
-            'keterangan' => 'nullable|string',
-        ]);
-
-        // Ambil hasil_pemeliharaan dari input
-
-        $hasil_pemeliharaan = $request->input('hasil_pemeliharaan'); // Ambil dari input
-        $keterangan = $request->input('keterangan'); // Anda perlu menentukan nilai ini jika ada
-        $bonus_per_orang = $request->input('bonus_per_orang'); // Anda perlu menentukan nilai ini jika ada
-
-        $perhitunganGaji = $this->gajiService->calculateSalary(
-            $request->ayam_id,
-            $request->kandang_id,
-            $hasil_pemeliharaan, // Pastikan ini diisi dengan nilai yang benar
-            $bonus_per_orang,
-            $keterangan
-            // $keterangan,
-        );
-
-        return redirect()
-    ->route('gaji.penggajian.index', $perhitunganGaji['perhitungan_gaji']->id_perhitungan)
-    ->with('success', 'Perhitungan gaji berhasil disimpan');
-
-    } catch (\Exception $e) {
-        return back()
-            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-            ->withInput();
+    {
+        try {
+            $request->validate([
+                'kandang_id'       => 'required|exists:kandang,id_kandang',
+                'ayam_id'          => 'required|exists:ayam,id_ayam',
+                // 'hasil_pemeliharaan' tidak lagi divalidasi karena akan dihitung otomatis
+                'bonus_per_orang'  => 'required|numeric',
+                'keterangan'       => 'nullable|string',
+            ]);
+    
+            // Panggil IndexPerformanceService untuk menghitung laba otomatis
+            // Misalnya, method calculateLaba($ayam_id) mengembalikan array dengan kunci 'total_laba'
+            $labaData = $this->gajiService->calculateLaba($request->ayam_id);
+            $hasil_pemeliharaan = $labaData['total_laba'] ?? 0; // Nilai laba otomatis
+    
+            $keterangan = $request->input('keterangan');
+            $bonus_per_orang = $request->input('bonus_per_orang');
+    
+            // Gunakan nilai laba otomatis untuk perhitungan gaji
+            $perhitunganGaji = $this->gajiService->calculateSalary(
+                $request->ayam_id,
+                $request->kandang_id,
+                $hasil_pemeliharaan, // Hasil pemeliharaan didapatkan dari perhitungan laba
+                $bonus_per_orang,
+                $keterangan
+            );
+    
+            return redirect()
+                ->route('gaji.penggajian.index', $perhitunganGaji['perhitungan_gaji']->id_perhitungan)
+                ->with('success', 'Perhitungan gaji berhasil disimpan');
+        } catch (\Exception $e) {
+            return back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
+        }
     }
-}
-
+    
 public function show($id_perhitungan): View
 {
     $perhitunganGaji = PerhitunganGaji::with(['rincianGaji.abk', 'rincianGaji.pinjaman', 'kandang', 'ayam'])

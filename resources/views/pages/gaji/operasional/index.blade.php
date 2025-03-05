@@ -17,7 +17,7 @@
 
 @section('content')
     <x-breadcrumb
-        :values="[__('Operasional')]">
+    :values="[__('Gaji'), __('Operasional')]">
         <button
             type="button"
             class="btn btn-primary btn-create"

@@ -517,13 +517,13 @@ function number_format(number, decimals = 0) {
     </div>
     @if(!empty($estimasiPembelian))
     <h4>Estimasi Pembelian</h4>
-    <table class="table">
+    <table class="table table-bordered">
         <thead>
             <tr>
                 <th>Uraian</th>
                 <th>QTY</th>
                 <th>Satuan</th>
-                <th>Harga</th>
+                <th>Harga Satuan</th>
                 <th>Jumlah</th>
             </tr>
         </thead>
@@ -533,7 +533,7 @@ function number_format(number, decimals = 0) {
                 <td>DOC</td>
                 <td>{{ number_format($ayam->qty_ayam) ?? 0 }}</td>
                 <td>Ekor</td>
-                <td>{{ number_format($ayam->doc->harga, 0, ',', '.') }} </td>
+                <td>{{ number_format($ayam->doc->harga, 0, ',', '.') }}</td>
                 <td>Rp {{ number_format($estimasiPembelian['doc']['total_harga'] ?? 0) }}</td>
             </tr>
             <!-- Pakan -->
@@ -542,7 +542,7 @@ function number_format(number, decimals = 0) {
                     <td>{{ $pakan->nama_pakan }}</td>
                     <td>{{ number_format($pakan->total_qty) ?? 0 }}</td>
                     <td>Kg</td>
-                    <td>{{ number_format($pakan->harga, 0, ',', '.') }} </td>
+                    <td>{{ number_format($pakan->harga, 0, ',', '.') }}</td>
                     <td>Rp {{ number_format($pakan->total_harga) }}</td>
                 </tr>
             @endforeach
@@ -554,6 +554,21 @@ function number_format(number, decimals = 0) {
                 <td>-</td>
                 <td>Rp {{ number_format($estimasiPembelian['obat'] ?? 0) }}</td>
             </tr>
+            <!-- Pakan Tersisa -->
+            @if(!empty($estimasiPembelian['pakan_tersisa_detail']))
+                <tr class="table-active">
+                    <td colspan="5" class="text-center"><strong>Pakan Tersisa</strong></td>
+                </tr>
+                @foreach($estimasiPembelian['pakan_tersisa_detail'] as $tersisa)
+                    <tr>
+                        <td>{{ $tersisa->nama_pakan }}</td>
+                        <td>{{ number_format($tersisa->total_berat, 0, ',', '.') }}</td>
+                        <td>Kg</td>
+                        <td>{{ number_format($tersisa->harga, 0, ',', '.') }}</td>
+                        <td>Rp {{ number_format($tersisa->total_cost, 0, ',', '.') }}</td>
+                    </tr>
+                @endforeach
+            @endif
         </tbody>
         <tfoot>
             <tr>
@@ -563,6 +578,8 @@ function number_format(number, decimals = 0) {
         </tfoot>
     </table>
 @endif
+
+
 @if(!empty($penjualan))
     <h4>PENJUALAN</h4>
     <table class="table table-bordered">
@@ -570,7 +587,7 @@ function number_format(number, decimals = 0) {
             <tr>
                 <th>No</th>
                 <th>Uraian</th>
-                <th>QTY</th>
+                <th>Rata-Rata Berat</th>
                 <th>Satuan</th>
                 <th>Harga Satuan</th>
                 <th>Jumlah</th>
@@ -583,7 +600,7 @@ function number_format(number, decimals = 0) {
                 <td>{{ number_format($penjualan['penjualan_daging']['qty'] ?? 0) }}</td>
                 <td>Kg</td>
                 <td>Rp {{ number_format($penjualan['penjualan_daging']['harga_satuan'] ?? 0) }}</td>
-                <td>Rp {{ number_format($penjualan['penjualan_daging']['jumlah'] ?? 0) }}</td>
+                <td>Rp {{ number_format($penjualan['total_penjualan'] ?? 0) }}</td>
             </tr>
         </tbody>
         <tfoot>

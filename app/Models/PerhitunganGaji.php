@@ -21,7 +21,8 @@ class PerhitunganGaji extends Model
         'total_potongan',
         'hasil_setelah_potongan',
         'bonus_per_orang',
-        'keterangan'
+        'keterangan',
+        'total_laba'
     ];
 
     public function rincianGaji()

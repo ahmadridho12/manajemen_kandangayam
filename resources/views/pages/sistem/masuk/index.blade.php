@@ -4,31 +4,31 @@
 
 <script>
     $(document).on('click', '.btn-edit', function () {
-        const id = $(this).data('id');
-        const periode = $(this).data('periode');
-        const tanggal_masuk = $(this).data('tanggal_masuk');
-        const tanggal_selesai = $(this).data('tanggal_selesai');
-        const qty_ayam = $(this).data('rentang_hari');
-        const qty_ayam = $(this).data('qty_ayam');
-        const qty_ayam = $(this).data('harga');
-        const status = $(this).data('status');
-        const kandang_id = $(this).data('kandang_id');
-        
-        // Perbaikan di sini - menggunakan ID form langsung
-        $('#editForm').attr('action', '{{ route("sistem.masuk.update", ":id") }}'.replace(':id', id));
+    const id = $(this).data('id');
+    const periode = $(this).data('periode');
+    const tanggal_masuk = $(this).data('tanggal_masuk');
+    const tanggal_selesai = $(this).data('tanggal_selesai');
+    const rentang_hari = $(this).data('rentang_hari'); // gunakan nama berbeda
+    const qty_ayam = $(this).data('qty_ayam');          // jumlah ayam
+    const harga = $(this).data('harga');                // harga, jika diperlukan
+    const doc_id = $(this).data('doc_id');              // doc_id
+    const status = $(this).data('status');
+    const kandang_id = $(this).data('kandang_id');
+    
+    // Ubah action form edit
+    $('#editForm').attr('action', '{{ route("sistem.masuk.update", ":id") }}'.replace(':id', id));
+    
+    // Isi field-field di modal dengan variabel yang benar
+    $('#periode').val(periode);
+    $('#tanggal_masuk').val(tanggal_masuk);
+    $('#tanggal_selesai').val(tanggal_selesai);
+    $('#rentang_hari').val(rentang_hari);
+    $('#qty_ayam').val(qty_ayam);
+    $('#status').val(status);
+    $('#edit-kandang').val(kandang_id);
+    $('#edit-doc').val(doc_id);
+});
 
-        // Isi field-field di modal
-        $('#periode').val(periode);
-        $('#tanggal_masuk').val(tanggal_masuk);
-        $('#tanggal_selesai').val(tanggal_selesai);
-        $('#rentang_hari').val(rentang_hari);
-        $('#qty_ayam').val(qty_ayam);
-        $('#status').val(status);
-
-        // Perbaikan di sini - menggunakan kandang_id bukan kandang
-        $('#edit-kandang').val(kandang_id);
-        $('#edit-doc').val(doc_id);
-    });
 </script>
 @endpush
 
