@@ -42,6 +42,8 @@ class PakanTransferController extends Controller
         if ($id_kandang) {
             $query->where('ayam.kandang_id', $id_kandang);
         }
+        $query->orderBy('pakan_transfers.tanggal', 'desc');
+
         // Menggunakan paginate untuk mendapatkan instance Paginator
         $data = $query->paginate(10); // 10 item per halaman
         $ayams = Ayam::all(); // Ambil semua data Kandang

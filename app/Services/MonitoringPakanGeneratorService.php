@@ -263,65 +263,90 @@ class MonitoringPakanGeneratorService
 
 
     public function transfer(array $data)
-    {
-        return DB::transaction(function () use ($data) {
-            // Cek stok di kandang asal
-            $stokAsal = MonitoringPakanDetail::where('ayam_id', $data['ayam_asal_id'])
+{
+    return DB::transaction(function () use ($data) {
+        // 1. Cek stok di kandang asal (MonitoringPakanDetail)
+        $stokAsal = MonitoringPakanDetail::where('ayam_id', $data['ayam_asal_id'])
                                            ->where('pakan_id', $data['pakan_id'])
                                            ->first();
 
-            if (!$stokAsal || $stokAsal->masuk < $data['qty']) {
-                throw new \Exception('Stok pakan di kandang asal tidak mencukupi');
-            }
+        if (!$stokAsal || $stokAsal->masuk < $data['qty']) {
+            throw new \Exception('Stok pakan di kandang asal tidak mencukupi');
+        }
 
-            // Buat record transfer
-            $transfer = PakanTransfer::create([
-                'tanggal' => $data['tanggal'],
-                'kandang_asal_id' => $data['kandang_asal_id'],
-                'kandang_tujuan_id' => $data['kandang_tujuan_id'],
-                'ayam_asal_id' => $data['ayam_asal_id'],
-                'ayam_tujuan_id' => $data['ayam_tujuan_id'],
-                'pakan_id' => $data['pakan_id'],
-                'qty' => $data['qty'],
-                'berat_zak' => $data['berat_zak'],
-                'total_berat' => $data['qty'] * $data['berat_zak'],
-                'keterangan' => $data['keterangan'] ?? null
+        // 2. Buat record transfer di tabel pakan_transfers
+        $transfer = PakanTransfer::create([
+            'tanggal'           => $data['tanggal'],
+            'kandang_asal_id'   => $data['kandang_asal_id'],
+            'kandang_tujuan_id' => $data['kandang_tujuan_id'],
+            'ayam_asal_id'      => $data['ayam_asal_id'],
+            'ayam_tujuan_id'    => $data['ayam_tujuan_id'],
+            'pakan_id'          => $data['pakan_id'],
+            'qty'               => $data['qty'],
+            'berat_zak'         => $data['berat_zak'],
+            'total_berat'       => $data['qty'] * $data['berat_zak'],
+            'keterangan'        => $data['keterangan'] ?? null
+        ]);
+
+        // 3. Kurangi stok di kandang asal (MonitoringPakanDetail)
+        $new_masuk_asal = $stokAsal->masuk - $data['qty'];
+        $new_total_berat_asal = $new_masuk_asal * $stokAsal->berat_zak;
+        $stokAsal->update([
+            'masuk'       => $new_masuk_asal,
+            'total_berat' => $new_total_berat_asal
+        ]);
+
+        // 4. Tambah stok di kandang tujuan (MonitoringPakanDetail)
+        $stokTujuan = MonitoringPakanDetail::where('ayam_id', $data['ayam_tujuan_id'])
+                                           ->where('pakan_id', $data['pakan_id'])
+                                           ->first();
+        if ($stokTujuan) {
+            $stokTujuan->increment('masuk', $data['qty']);
+            $stokTujuan->increment('total_berat', $data['qty'] * $data['berat_zak']);
+        } else {
+            MonitoringPakanDetail::create([
+                'ayam_id'     => $data['ayam_tujuan_id'],
+                'pakan_id'    => $data['pakan_id'],
+                'masuk'       => $data['qty'],
+                'berat_zak'   => $data['berat_zak'],
+                'total_berat' => $data['qty'] * $data['berat_zak']
             ]);
+        }
 
-            // Kurangi stok di kandang asal
-            $new_masuk_asal = $stokAsal->masuk - $data['qty'];
-            $new_total_berat_asal = $new_masuk_asal * $stokAsal->berat_zak;
-            
-            $stokAsal->update([
-                'masuk' => $new_masuk_asal,
-                'total_berat' => $new_total_berat_asal
-            ]);
+        // 5. Pastikan record monitoring pakan harian untuk tanggal transfer ada
+        //    untuk ayam asal dan ayam tujuan.
+        $monitoringAsal = MonitoringPakan::firstOrCreate(
+            ['ayam_id' => $data['ayam_asal_id'], 'tanggal' => $data['tanggal']],
+            ['day' => 0, 'total_masuk' => 0, 'total_berat' => 0, 'keluar' => 0, 'sisa' => 0]
+        );
+        $monitoringTujuan = MonitoringPakan::firstOrCreate(
+            ['ayam_id' => $data['ayam_tujuan_id'], 'tanggal' => $data['tanggal']],
+            ['day' => 0, 'total_masuk' => 0, 'total_berat' => 0, 'keluar' => 0, 'sisa' => 0]
+        );
 
-            // Tambah stok di kandang tujuan
-            $stokTujuan = MonitoringPakanDetail::where('ayam_id', $data['ayam_tujuan_id'])
-                                             ->where('pakan_id', $data['pakan_id'])
-                                             ->first();
+        // 6. Update record monitoring pakan untuk mencatat transfer.
+        // Hanya untuk ayam tujuan, kita akumulasi total_transfer dengan nilai transfer baru.
+        $newTransferTujuan = ($monitoringTujuan->total_transfer ?? 0) + $data['qty'];
+        $monitoringTujuan->update([
+            'transfer_id'    => $transfer->id,
+            'total_transfer' => $newTransferTujuan
+        ]);
+        // Untuk ayam asal, jika kamu tidak ingin mencatat transfer keluar, biarkan total_transfer tetap 0.
+        $monitoringAsal->update([
+            'transfer_id'    => $transfer->id,
+            'total_transfer' => 0
+        ]);
 
-            if ($stokTujuan) {
-                $stokTujuan->increment('masuk', $data['qty']);
-                $stokTujuan->increment('total_berat', $data['qty'] * $data['berat_zak']);
-            } else {
-                MonitoringPakanDetail::create([
-                    'ayam_id' => $data['ayam_tujuan_id'],
-                    'pakan_id' => $data['pakan_id'],
-                    'masuk' => $data['qty'],
-                    'berat_zak' => $data['berat_zak'],
-                    'total_berat' => $data['qty'] * $data['berat_zak']
-                ]);
-            }
+        // 7. Update sisa pakan untuk kedua ayam mulai dari tanggal transfer.
+        $this->updateSisaPakan($data['ayam_asal_id'], $data['tanggal']);
+        $this->updateSisaPakan($data['ayam_tujuan_id'], $data['tanggal']);
 
-            // Update monitoring harian untuk kedua kandang
-            $this->updateSisaPakan($data['ayam_asal_id'], $data['tanggal']);
-            $this->updateSisaPakan($data['ayam_tujuan_id'], $data['tanggal']);
+        return $transfer;
+    });
+}
 
-            return $transfer;
-        });
-    }
+
+    
     // Fungsi untuk mengupdate sisa pakan untuk semua tanggal setelah perubahan
     private function updateAllSisaPakanAfterDate($ayamId, $startDate)
     {
@@ -355,34 +380,41 @@ class MonitoringPakanGeneratorService
         }
     }
     private function updateSisaPakan($ayam_id, $tanggal)
-    {
-        // Ambil semua data monitoring dari tanggal yang ditentukan ke depan
-        $monitorings = MonitoringPakan::where('ayam_id', $ayam_id)
-                                     ->whereDate('tanggal', '>=', $tanggal)
-                                     ->orderBy('tanggal')
-                                     ->get();
-        
-        // Ambil sisa pakan dari hari sebelumnya
-        $previousSisa = MonitoringPakan::where('ayam_id', $ayam_id)
-                                      ->whereDate('tanggal', '<', $tanggal)
-                                      ->orderBy('tanggal', 'desc')
-                                      ->value('sisa') ?? 0;
-        
-        // Mulai perhitungan dari sisa sebelumnya
-        $running_sisa = $previousSisa;
-        
-        foreach ($monitorings as $monitoring) {
-            // Hitung sisa untuk hari ini:
-            // 1. Gunakan sisa dari perhitungan sebelumnya
-            // 2. Tambahkan pakan yang masuk hari ini
-            // 3. Kurangi pakan yang keluar hari ini
-            $sisa_hari_ini = $running_sisa + $monitoring->total_masuk - ($monitoring->keluar ?? 0);
-            
-            // Update sisa di database
-            $monitoring->update(['sisa' => $sisa_hari_ini]);
-            
-            // Set running_sisa untuk perhitungan hari berikutnya
-            $running_sisa = $sisa_hari_ini;
-        }
+{
+    // Ambil semua data monitoring dari tanggal yang ditentukan ke depan (urut ascending)
+    $monitorings = MonitoringPakan::where('ayam_id', $ayam_id)
+                                  ->whereDate('tanggal', '>=', $tanggal)
+                                  ->orderBy('tanggal', 'asc')
+                                  ->get();
+
+    // Ambil sisa pakan dari hari sebelumnya
+    $previousSisa = MonitoringPakan::where('ayam_id', $ayam_id)
+                                   ->whereDate('tanggal', '<', $tanggal)
+                                   ->orderBy('tanggal', 'desc')
+                                   ->value('sisa') ?? 0;
+
+    // Mulai perhitungan dari sisa sebelumnya
+    $running_sisa = $previousSisa;
+
+    foreach ($monitorings as $monitoring) {
+        // PERBAIKAN: Gunakan nilai total_transfer langsung dari objek monitoring
+        // tanpa query ulang
+        $fresh_total_transfer = (int) $monitoring->total_transfer ?? 0;
+
+        // Hitung sisa hari ini dengan rumus: sisa = running_sisa + total_masuk + total_transfer - keluar
+        $sisa_hari_ini = $running_sisa 
+                         + ($monitoring->total_masuk ?? 0)
+                         + $fresh_total_transfer 
+                         - ($monitoring->keluar ?? 0);
+
+        // Update record monitoring dengan sisa yang baru dihitung
+        $monitoring->update(['sisa' => $sisa_hari_ini]);
+
+        // Set running_sisa untuk perhitungan hari berikutnya
+        $running_sisa = $sisa_hari_ini;
     }
+}
+    
+    
+    
 }

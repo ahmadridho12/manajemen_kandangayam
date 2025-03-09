@@ -70,43 +70,52 @@
         <div class="table-responsive text-nowrap">
             <table class="table">
                 <thead>
-                <tr>
-                    <th>No</th>
-                    <th>{{ __('Periode') }}</th>
-                    <th>{{ __('Tanggal') }}</th>
-                    <th>{{ __('Hari') }}</th>
-                    <th>{{ __('Total Masuk') }}</th>
-                    <th>{{ __('Total Berat') }}</th>
-                    <th>{{ __(' keluar') }}</th>
-                    <th>{{ __('Sisa') }}</th>
-                </tr>
+                    <tr>
+                        <th>No</th>
+                        <th>{{ __('Periode') }}</th>
+                        <th>{{ __('Tanggal') }}</th>
+                        <th>{{ __('Hari') }}</th>
+                        <th>{{ __('Total Masuk') }}</th>
+                        <th>{{ __('Total Berat') }}</th>
+                        <th>{{ __('Keluar') }}</th>
+                        <th>{{ __('Transfer Masuk') }}</th>
+                        <th>{{ __('Sisa') }}</th>
+                    </tr>
                 </thead>
                 <tbody>
-                @if($data && $data->count())
-                    @foreach($data as $pa)
+                    @if($data && $data->count())
+                        @foreach($data as $pa)
+                            <tr>
+                                <td>{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
+                                <td>{{ $pa->ayam->periode ?? 'Tidak Ada' }}</td>
+                                <td>{{ $pa->tanggal }}</td>
+                                <td>{{ $pa->day }}</td>
+                                <td>{{ $pa->total_masuk }} </td>
+                                <td>{{ $pa->total_berat }} Kg</td>
+                                <td>{{ $pa->keluar }} </td>
+                                <td>
+                                    {{-- Tampilkan data transfer jika ada dan memenuhi syarat transfer masuk --}}
+                                    @if($pa->transfer_id && $pa->transfer && $pa->transfer->kandang_tujuan_id == $pa->ayam->kandang_id)
+                                        {{ $pa->total_transfer }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td>{{ $pa->sisa }} </td>
+                            </tr>
+                        @endforeach
+                    @else
                         <tr>
-                            <td>{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
-                            <td>{{ $pa->ayam->periode ?? 'Tidak Ada' }}</td>
-                            <td>{{ $pa->tanggal }}</td>
-                            <td>{{ $pa->day }}</td>
-                            <td>{{ $pa->total_masuk }} </td>
-                            <td>{{ $pa->total_berat }} Kg</td>
-                            <td>{{ $pa->keluar }} </td>
-                            <td>{{ $pa->sisa }} </td>
+                            <td colspan="9" class="text-center">
+                                {{ __('menu.general.empty') }}
+                            </td>
                         </tr>
-                    @endforeach
-                @else
-                    <tr>
-                        <td colspan="8" class="text-center">
-                            {{ __('menu.general.empty') }}
-                        </td>
-                    </tr>
-                @endif
+                    @endif
                 </tbody>
             </table>
         </div>
     </div>
-
+    
     {!! $data->appends(['search' => $search])->links() !!} 
 
     <!-- Create Modal -->

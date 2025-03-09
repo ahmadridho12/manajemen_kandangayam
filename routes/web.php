@@ -184,6 +184,8 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/panen/{id_panen}', [PanenController::class, 'show'])->name('panen.show');
         Route::get('/panen/{id_panen}/edit', [PanenController::class, 'edit'])->name('panen.edit');
         Route::put('panen/{id_panen}', [PanenController::class, 'update'])->name('panen.update');
+        Route::delete('/panen/{id_panen}', [PanenController::class, 'destroy'])->name('panen.destroy');
+
         // Route::get('/get-harga-ayam/{id}', [PanenController::class, 'getHargaAyam']);
 
 

@@ -23,16 +23,29 @@ class PanenController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $id_ayam = $request->input('id_ayam'); // Input dari dropdown filter
+        $id_kandang = $request->input('id_kandang'); // Filter kandang
     
         // Membuat query dasar
         $query = Panen::query();
+        $query->join('ayam', 'panen.ayam_id', '=', 'ayam.id_ayam') // Join ke tabel ayam
+      ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang'); 
     
         // Jika ada parameter pencarian, tambahkan kondisi WHERE
         if ($search) {
             $query->where('tanggal_panen', 'like', '%' . $search . '%');
             // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
         }
-    
+        if ($id_ayam) {
+            $query->where('ayam_id', $id_ayam);
+        }
+
+         // Filter kandang
+        if ($id_kandang) {
+            $query->where('ayam.kandang_id', $id_kandang);
+        }
+        $query->orderBy('panen.tanggal_panen', 'desc');
+
         // Menggunakan paginate untuk mendapatkan instance Paginator
         $data = $query->paginate(10); // 10 item per halaman
         $ayams = Ayam::all(); // Ambil semua data Kandang
@@ -41,6 +54,8 @@ class PanenController extends Controller
             'data' => $data,
             'search' => $search,
             'ayams' => $ayams,
+            'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
+            'kandangs' => \App\Models\Kandang::all(), // Ambil semua data kandang  
 
         ]);
     }
@@ -126,38 +141,7 @@ class PanenController extends Controller
         return view('pages.sistem.panen.show', compact('panen'));
     }
 
-    // public function edit(AyamMati $ayam_mati)
-    // {
-    //     return view('ayam_mati.edit', compact('ayam_mati', 'ayam'));
-    // }
-
-    // public function update(Request $request, $id_ayam_mati)
-    // {
-    //     $request->validate([
-    //         'ayam_id' => 'required|exists:ayam,id_ayam',
-    //         'tanggal_mati' => 'required|date',
-    //         'quantity_mati' => 'required|integer|min:0',
-    //         'alasan' => 'required|string|max:255',
-    //     ]);
-
-    //     $m = AyamMati::find($id_ayam_mati);
-
-    //     $m->update([
-    //         'ayam_id' => $request->ayam_id,
-    //         'tanggal_mati' => $request->tanggal_mati,
-    //         'quantity_mati' => $request->quantity_mati,
-    //         'alasan' => $request->alasan,
-    //     ]);
-    //     return redirect()->route('sistem.keluar.index')->with('success', 'Ayam Mati berhasil diperbarui!');
-    // }
-
-    // public function destroy($id_ayam_mati)
-    // {
-
-    //  $m = AyamMati::findOrFail($id_ayam_mati);
-    //  $m->delete();
-    //     return redirect()->route('sistem.keluar.index')->with('success', 'Ayam Mati deleted successfully.');
-    // }
+   
     public function edit($id_panen): View
 {
     // Mengambil semua data dari tabel unit
@@ -229,6 +213,33 @@ public function update(Request $request, $id_panen): RedirectResponse
         return redirect()->back()->with('error', 'Gagal update: ' . $e->getMessage());
     }
 }
+public function destroy($id_panen): RedirectResponse
+{
+    DB::beginTransaction();
+    try {
+        $panen = Panen::findOrFail($id_panen);
+
+        // Panggil service untuk rollback nilai populasi
+        $populasiService = new PopulasiGeneratorService();
+        $populasiService->rollbackPopulasiByPanen($panen);
+
+        // Hapus foto jika ada
+        if ($panen->foto) {
+            Storage::disk('public')->delete($panen->foto);
+        }
+
+        // Hapus data panen
+        $panen->delete();
+
+        DB::commit();
+        return redirect()->route('sistem.panen.index')->with('success', 'Data panen berhasil dihapus dan populasi diperbarui');
+    } catch (\Exception $e) {
+        DB::rollback();
+        return redirect()->back()->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+    }
+}
+
+
 
 
 }

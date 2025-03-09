@@ -86,55 +86,102 @@ class PopulasiGeneratorService {
     }
     
     public function updatePopulasiByPanen(Panen $panen) {
-        // Konversi tanggal panen ke string dengan format Y-m-d
-        $tanggalPanenStr = Carbon::parse($panen->tanggal_panen)->toDateString();
-        
-        // Ambil record populasi berdasarkan ayam dan tanggal yang konsisten
+        $tanggalPanen = Carbon::parse($panen->tanggal_panen);
+    
         $populasi = Populasi::where('populasi', $panen->ayam_id)
-            ->whereDate('tanggal', $tanggalPanenStr)
+            ->whereDate('tanggal', $tanggalPanen->toDateString())
             ->first();
-        
+    
         if ($populasi) {
-            // Ambil semua data panen untuk tanggal tersebut dengan format yang sama
+            // Get all panens for this date
             $allPanens = Panen::where('ayam_id', $panen->ayam_id)
-                ->whereDate('tanggal_panen', $tanggalPanenStr)
+                ->whereDate('tanggal_panen', $tanggalPanen)
                 ->get();
             
-            // Hitung total quantity panen untuk tanggal itu
+            // Calculate total panen quantity
             $totalPanenQuantity = $allPanens->sum('quantity');
             
-            // Update kolom panen (misalnya, simpan id panen terakhir)
-            $populasi->panen = $panen->id_panen; 
+            // Sync panen relations
+            $populasi->panens()->sync($allPanens->pluck('id_panen'));
             
-            // Update kolom qty_panen dengan total quantity panen
+            // Update quantities
             $populasi->qty_panen = $totalPanenQuantity;
-            
-            // Update total sisa populasi: qty_now - (qty_mati + total panen)
             $populasi->total = $populasi->qty_now - ($populasi->qty_mati + $totalPanenQuantity);
             $populasi->save();
     
-            // Update record pada hari-hari berikutnya dengan format tanggal yang konsisten
-            $this->updateSubsequentDays($panen->ayam_id, $tanggalPanenStr);
+            $this->updateSubsequentDays($panen->ayam_id, $tanggalPanen);
         }
     }
     
-    private function updateSubsequentDays($ayamId, $startDate) {
+    public function rollbackPopulasiByPanen(Panen $panen)
+    {
+        $tanggalPanen = Carbon::parse($panen->tanggal_panen)->toDateString();
+    
+        // Ambil record populasi untuk ayam tersebut pada tanggal panen
+        $populasiRecord = Populasi::where('populasi', $panen->ayam_id)
+            ->whereDate('tanggal', $tanggalPanen)
+            ->first();
+    
+        if ($populasiRecord) {
+            // Karena panen dihapus, qty_panen di hari tersebut di-set ke 0
+            $populasiRecord->qty_panen = 0;
+            // qty_now tidak berubah (mengacu pada nilai total dari hari sebelumnya)
+            $populasiRecord->total = $populasiRecord->qty_now - ($populasiRecord->qty_mati + $populasiRecord->qty_panen);
+            $populasiRecord->save();
+        }
+    
+        // Update record pada hari-hari berikutnya agar konsisten
+        $this->updateSubsequentDays($panen->ayam_id, $tanggalPanen);
+    }
+    
+    public function rollbackPopulasiByAyamMati(AyamMati $ayamMati)
+{
+    // Ambil tanggal ayam mati yang ingin di-rollback
+    $tanggalMati = Carbon::parse($ayamMati->tanggal_mati)->toDateString();
+
+    // Cari record populasi untuk ayam tersebut pada tanggal mati
+    $populasiRecord = Populasi::where('populasi', $ayamMati->ayam_id)
+        ->whereDate('tanggal', $tanggalMati)
+        ->first();
+
+    if ($populasiRecord) {
+        // Karena data ayam mati dihapus, set qty_mati ke 0
+        $populasiRecord->qty_mati = 0;
+        // Total dihitung ulang: total = qty_now - (qty_mati + qty_panen)
+        $populasiRecord->total = $populasiRecord->qty_now - ($populasiRecord->qty_mati + $populasiRecord->qty_panen);
+        $populasiRecord->save();
+    }
+
+    // Update record pada hari-hari berikutnya agar perhitungannya konsisten
+    $this->updateSubsequentDays($ayamMati->ayam_id, $tanggalMati);
+}
+
+
+    private function updateSubsequentDays($ayamId, $startDate)
+    {
+        // Ambil record hari berikutnya secara urut berdasarkan tanggal
         $subsequentRecords = Populasi::where('populasi', $ayamId)
             ->whereDate('tanggal', '>', $startDate)
             ->orderBy('tanggal')
             ->get();
     
+        // Ambil total pada tanggal mulai sebagai dasar untuk qty_now hari berikutnya
         $previousTotal = Populasi::where('populasi', $ayamId)
             ->whereDate('tanggal', $startDate)
             ->value('total');
     
         foreach ($subsequentRecords as $record) {
+            // Set qty_now berdasarkan total dari hari sebelumnya
             $record->qty_now = $previousTotal;
-            $record->total = $previousTotal - ($record->qty_mati + $record->qty_panen);
+            // Total dihitung ulang: total = qty_now - (qty_mati + qty_panen)
+            $record->total = $record->qty_now - ($record->qty_mati + $record->qty_panen);
             $record->save();
-            
+    
+            // Update previousTotal untuk record berikutnya
             $previousTotal = $record->total;
         }
     }
     
+
+
 }

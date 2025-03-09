@@ -31,6 +31,8 @@ class AyamController extends Controller
             $query->where('periode', 'like', '%' . $search . '%');
             // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
         }
+        $query->orderBy('created_at', 'desc');
+
     
         // Menggunakan paginate untuk mendapatkan instance Paginator
         $data = $query->paginate(10); // 10 item per halaman        return view('ayam.index', compact('ayam'));

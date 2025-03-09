@@ -36,7 +36,8 @@ class PerhitunganGajiController extends Controller
             $query->where('tanggal_mati', 'like', '%' . $search . '%');
             // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
         }
-    
+        $query->orderBy('perhitungan_gaji.created_at', 'desc');
+
         // Menggunakan paginate untuk mendapatkan instance Paginator
         $data = $query->paginate(10); // 10 item per halaman
         $ayams = Ayam::all(); // Ambil semua data Kandang

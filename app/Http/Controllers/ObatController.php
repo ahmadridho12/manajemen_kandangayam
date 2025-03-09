@@ -23,6 +23,8 @@ class ObatController extends Controller
             $query->where('nama_obat', 'like', '%' . $search . '%');
             // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
         }
+        $query->orderBy('obat.created_at', 'desc');
+
     
         // Menggunakan paginate untuk mendapatkan instance Paginator
         $data = $query->paginate(10); // 10 item per halaman

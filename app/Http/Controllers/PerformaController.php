@@ -96,7 +96,8 @@ class PerformaController extends Controller
         if ($request->filled('id_kandang')) {
             $query->where('kandang_id', $request->id_kandang);
         }
-        
+        $query->orderBy('id_ayam', 'desc');
+
         // Ambil data paginated
         $data = $query->paginate(10);
     

@@ -6,6 +6,7 @@ use App\Models\Ayam;
 use App\Models\Populasi;
 use App\Services\PopulasiGeneratorService;
 
+use Illuminate\Http\RedirectResponse; // Pastikan ini ditambahkan
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,24 +18,39 @@ class AyammatiController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $id_ayam = $request->input('id_ayam'); // Input dari dropdown filter
+        $id_kandang = $request->input('id_kandang'); // Filter kandang
     
         // Membuat query dasar
         $query = AyamMati::query();
-    
+        $query->join('ayam', 'ayam_mati.ayam_id', '=', 'ayam.id_ayam') // Join ke tabel ayam
+        ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang');
         // Jika ada parameter pencarian, tambahkan kondisi WHERE
         if ($search) {
             $query->where('tanggal_mati', 'like', '%' . $search . '%');
             // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
         }
-    
+         // Add ayam filter if selected
+         if ($id_ayam) {
+            $query->where('ayam_id', $id_ayam);
+        }
+
+         // Filter kandang
+        if ($id_kandang) {
+            $query->where('ayam.kandang_id', $id_kandang);
+        }
+        $query->orderBy('ayam_mati.tanggal_mati', 'desc');
+
         // Menggunakan paginate untuk mendapatkan instance Paginator
-        $data = $query->paginate(10); // 10 item per halaman
+        $data = $query->paginate(30); // 10 item per halaman
         $ayams = Ayam::all(); // Ambil semua data Kandang
 
         return view('pages.sistem.keluar.index', [
             'data' => $data,
             'search' => $search,
             'ayams' => $ayams,
+            'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
+            'kandangs' => \App\Models\Kandang::all(), // Am
 
         ]);
     }
@@ -101,11 +117,44 @@ class AyammatiController extends Controller
 
         return redirect()->route('sistem.keluar.index')->with('success', 'Ayam Mati berhasil diperbarui!');
     }
-    public function destroy($id_ayam_mati)
-    {
 
-     $m = AyamMati::findOrFail($id_ayam_mati);
-     $m->delete();
-        return redirect()->route('sistem.keluar.index')->with('success', 'Ayam Mati deleted successfully.');
+    public function destroy($id_ayam_mati): RedirectResponse
+{
+    DB::beginTransaction();
+    try {
+        // Ambil data ayam mati yang akan dihapus
+        $ayamMati = AyamMati::findOrFail($id_ayam_mati);
+
+        // Panggil service untuk rollback perubahan populasi akibat pencatatan ayam mati
+        $this->populasiService->rollbackPopulasiByAyamMati($ayamMati);
+
+        // Hapus record ayam mati
+        $ayamMati->delete();
+
+        DB::commit();
+        return redirect()->route('sistem.keluar.index')
+            ->with('success', 'Data ayam mati berhasil dihapus dan populasi diperbarui');
+    } catch (\Exception $e) {
+        DB::rollback();
+        return redirect()->back()
+            ->with('error', 'Gagal menghapus data: ' . $e->getMessage());
     }
 }
+
+//     public function destroy($id_ayam_mati)
+// {
+//     $m = AyamMati::findOrFail($id_ayam_mati);
+//     $ayamId = $m->ayam_id;
+//     $tanggalMati = Carbon::parse($m->tanggal_mati);
+    
+//     $m->delete();
+    
+//     // Regenerate ulang populasi dari tanggal tersebut dan setelahnya
+//     $populasiService = new PopulasiGeneratorService();
+//     $populasiService->updatePopulasiAfterDeletion($ayamId, $tanggalMati->toDateString());
+    
+//     return redirect()->route('sistem.keluar.index')
+//         ->with('success', 'Ayam Mati deleted successfully and population updated.');
+// }
+}
+

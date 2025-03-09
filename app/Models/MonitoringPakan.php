@@ -19,7 +19,9 @@ class MonitoringPakan extends Model
         'total_masuk',
         'total_berat',
         'keluar',
-        'sisa'
+        'sisa',
+        'transfer_id',      // Kolom baru
+        'total_transfer'    // Kolom baru
     ];
     
     public function ayam()
@@ -41,4 +43,11 @@ class MonitoringPakan extends Model
     {
         return $this->hasMany(PakanTransfer::class, 'monitoring_pakan_to_id', 'id_monitoring_pakan');
     }
+    
+    // Relasi ke transfer jika diperlukan (satu record monitoring berkaitan dengan satu transfer)
+    public function transfer()
+    {
+        return $this->belongsTo(PakanTransfer::class, 'transfer_id', 'id');
+    }
+
 }

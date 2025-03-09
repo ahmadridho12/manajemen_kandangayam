@@ -42,12 +42,12 @@
                         <a class="dropdown-item" href="{{ route('sistem.panen.edit', $panen->id_panen) }}">
                             {{ __('edit') }}
                         </a>
-                        <form action="" class="d-inline"
+                        <form action="{{ route('sistem.panen.destroy', $panen->id_panen) }}" class="d-inline"
                             method="post">
                           @csrf
                           @method('DELETE')
                           <span
-                              class="dropdown-item cursor-pointer btn-delete">{{ __('menu.general.delete') }}</span>
+                              class="dropdown-item cursor-pointer btn-delete" >{{ __('menu.general.delete') }}</span>
                       </form>
                         
                         

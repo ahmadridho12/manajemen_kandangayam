@@ -14,16 +14,29 @@ class OperasionalController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $id_ayam = $request->input('id_ayam'); // Input dari dropdown filter
+        $id_kandang = $request->input('id_kandang'); // Filter kandang
     
         // Membuat query dasar
         $query = Operasional::query();
-    
+        $query->join('ayam', 'potongan_operasional.ayam_id', '=', 'ayam.id_ayam') // Join ke tabel ayam
+        ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang');
         // Jika ada parameter pencarian, tambahkan kondisi WHERE
         if ($search) {
             $query->where('nama_potongan', 'like', '%' . $search . '%');
             // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
         }
-    
+          // Add ayam filter if selected
+          if ($id_ayam) {
+            $query->where('ayam_id', $id_ayam);
+        }
+
+         // Filter kandang
+        if ($id_kandang) {
+            $query->where('ayam.kandang_id', $id_kandang);
+        }
+        $query->orderBy('potongan_operasional.tanggal', 'desc');
+
         // Menggunakan paginate untuk mendapatkan instance Paginator
         $data = $query->paginate(10); // 10 item per halaman
         $kandangs = Kandang::all(); // Ambil semua data Kandang
@@ -34,6 +47,9 @@ class OperasionalController extends Controller
             'search' => $search,
             'ayams' => $ayams,
             'kandangs' => $kandangs,
+            'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
+            'kandangs' => \App\Models\Kandang::all(), // Ambil semua data kandang  
+
 
         ]);
     }
