@@ -99,8 +99,8 @@ class PakanMasukController extends Controller
         // Ambil harga dari tabel Pakan
         $harga_pakan = Pakan::where('id_pakan', $request->input('pakan_id'))->value('harga');
         
-        // Hitung total_harga
-        $total_harga_pakan = $request->total_berat * $harga_pakan;
+        // Hitung total_harga - PERBAIKAN DISINI
+        $total_harga_pakan = $total_berat * $harga_pakan;
 
         $pakan_masuk = new PakanMasuk();
         $pakan_masuk->ayam_id = $request->input('ayam_id');
@@ -168,7 +168,7 @@ public function edit(PakanMasuk $pakan_masuk)
     // Ambil harga pakan dari tabel Pakan
     $harga_pakan = Pakan::where('id_pakan', $request->pakan_id)->value('harga');
     // Hitung total harga pakan baru
-    $total_harga_pakan = $request->total_berat * $harga_pakan;
+    $total_harga_pakan = $total_berat * $harga_pakan;
 
     // Lakukan update data pakan masuk
     $pm->update([
