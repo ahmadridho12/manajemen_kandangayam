@@ -45,7 +45,7 @@ class PerhitunganGajiController extends Controller
         return view('pages.gaji.penggajian.index', [
             'data' => $data,
             'search' => $search,
-            'ayams' => $ayams,
+            'ayams' => Ayam::orderBy('id_ayam', 'desc')->get(), // Urutkan ayam berdasarkan yang terbaru
             'kandangs' => $kandangs,
 
         ]);
@@ -54,7 +54,7 @@ class PerhitunganGajiController extends Controller
     public function create(): View
     {
         $kandangs = Kandang::all();
-        $ayams = Ayam::all();
+        $ayams = \App\Models\Ayam::orderBy('id_ayam', 'desc')->get(); // Urutkan ayam dari terbaru
         return view('pages.gaji.penggajian.add', compact('kandangs', 'ayams'));
     }
 
@@ -135,4 +135,16 @@ public function printSlip($id_rincian)
     
     return view('pages.gaji.penggajian.print-slip', compact('rincian'));
 }
+public function destroy($id_perhitungan)
+{
+    try {
+        $perhitunganGaji = PerhitunganGaji::findOrFail($id_perhitungan);
+        $perhitunganGaji->delete();
+
+        return redirect()->route('gaji.penggajian.index')->with('success', 'Data perhitungan gaji berhasil dihapus');
+    } catch (\Exception $e) {
+        return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+    }
+}
+
 }

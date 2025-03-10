@@ -17,66 +17,63 @@ class PakanMasukController extends Controller
 {
     //
     public function index(Request $request)
-    {
-        $search = $request->input('search');
-        $id_ayam = $request->input('id_ayam'); // Input dari dropdown filter
-        $id_kandang = $request->input('id_kandang'); // Filter kandang
+{
+    $search = $request->input('search');
+    $id_ayam = $request->input('id_ayam'); // Input dari dropdown filter
+    $id_kandang = $request->input('id_kandang'); // Filter kandang
 
-        $query = PakanMasuk::query();
-        $query->join('ayam', 'pakan_masuk.ayam_id', '=', 'ayam.id_ayam') // Join ke tabel ayam
-      ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang'); // Join ke tabel kandang
+    // Query dasar dengan join ke tabel ayam dan kandang
+    $query = PakanMasuk::query()
+        ->join('ayam', 'pakan_masuk.ayam_id', '=', 'ayam.id_ayam')
+        ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang');
 
-        // Membuat query dasar
-        // $query = PakanMasuk::query();
-    
-        // Jika ada parameter pencarian, tambahkan kondisi WHERE
-        if ($search) {
-            $query->where('berat_zak', 'like', '%' . $search . '%');
-            // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
-        }
-         // Add ayam filter if selected
-         if ($id_ayam) {
-            $query->where('ayam_id', $id_ayam);
-        }
-
-         // Filter kandang
-        if ($id_kandang) {
-            $query->where('ayam.kandang_id', $id_kandang);
-        }
-        $query->orderBy('pakan_masuk.tanggal', 'desc');
-        // Menggunakan paginate untuk mendapatkan instance Paginator
-        $data = $query->paginate(10); // 10 item per halaman
-        $ayams = Ayam::all(); // Ambil semua data Kandang
-        $pakans = Pakan::all(); // Ambil semua data Kandang
-        // $kandangs = Kandang::all(); // Ambil semua data Kandang
-
-        return view('pages.pakan.pakanmasuk.index', [
-            'data' => $data,
-            'search' => $search,
-            'ayams' => $ayams,
-            'pakans' => $pakans,
-            'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
-            'kandangs' => \App\Models\Kandang::all(), // Ambil semua data kandang  
-
-        ]);
+    // Filter berdasarkan pencarian berat_zak
+    if ($search) {
+        $query->where('berat_zak', 'like', '%' . $search . '%');
     }
 
-
-    public function create(): View
-    {
-        $ayams = \App\Models\Ayam::all(); // Mengambil semua data dari tabel unit
-        $pakans = \App\Models\Pakan::all(); // Mengambil semua data dari tabel unit
-
-        // Menampilkan form untuk membuat surat izin baru
-        return view('pages.pakan.pakanmasuk.add', [
-            'ayams' => $ayams,
-            'pakans' => $pakans,
-            'total_berat' => 0, // Tambahin ini biar gak undefined
-            'total_harga_pakan' => 0, // Tambahin ini sekalian
-            
-
-        ]); 
+    // Filter berdasarkan ayam yang dipilih
+    if ($id_ayam) {
+        $query->where('pakan_masuk.ayam_id', $id_ayam);
     }
+
+    // Filter berdasarkan kandang yang dipilih
+    if ($id_kandang) {
+        $query->where('ayam.kandang_id', $id_kandang);
+    }
+
+    // Urutkan berdasarkan tanggal terbaru
+    $query->orderBy('pakan_masuk.tanggal', 'desc');
+
+    // Ambil data dengan pagination
+    $data = $query->paginate(10);
+
+    return view('pages.pakan.pakanmasuk.index', [
+        'data' => $data,
+        'search' => $search,
+        'ayams' => Ayam::orderBy('id_ayam', 'desc')->get(), // Urutkan ayam berdasarkan yang terbaru
+        'pakans' => Pakan::all(),
+        'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
+        'kandangs' => Kandang::all(), // Ambil semua data kandang
+    ]);
+}
+
+
+
+public function create(): View
+{
+    $ayams = \App\Models\Ayam::orderBy('id_ayam', 'desc')->get(); // Urutkan ayam dari terbaru
+    $pakans = \App\Models\Pakan::all(); // Mengambil semua data dari tabel pakan
+
+    // Menampilkan form untuk membuat data pakan masuk
+    return view('pages.pakan.pakanmasuk.add', [
+        'ayams' => $ayams,
+        'pakans' => $pakans,
+        'total_berat' => 0, // Supaya tidak undefined
+        'total_harga_pakan' => 0, // Supaya tidak undefined
+    ]); 
+}
+
 
     public function store(Request $request): RedirectResponse 
 {

@@ -47,7 +47,7 @@ class PinjamanController extends Controller
         return view('pages.gaji.pinjaman.index', [
             'data' => $data,
             'search' => $search,
-            'ayams' => $ayams,
+            'ayams' => Ayam::orderBy('id_ayam', 'desc')->get(), // Urutkan ayam berdasarkan yang terbaru
             'kandangs' => $kandangs,
             'abks' => $abks,
 

@@ -156,9 +156,11 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/penggajian/create', [PerhitunganGajiController::class, 'create'])->name('penggajian.create');
         Route::post('/penggajian/store', [PerhitunganGajiController::class, 'store'])->name('penggajian.store');
         Route::get('/penggajian/{id_perhitungan}', [PerhitunganGajiController::class, 'show'])->name('penggajian.show');
+        Route::delete('/penggajian/{id_perhitungan}', [PerhitunganGajiController::class, 'destroy'])->name('penggajian.destroy');
         // Route::get('/penggajian/print/{id}', [App\Http\Controllers\PerhitunganGajiController::class, 'print'])->name('penggajian.print');
         Route::get('/gaji/print/{id_perhitungan}', [PerhitunganGajiController::class, 'print'])->name('penggajian.print');
         Route::get('/gaji/penggajian/print-slip/{id}', [PerhitunganGajiController::class, 'printSlip']) ->name('penggajian.print.slip');
+
         
     });
     // Sistem

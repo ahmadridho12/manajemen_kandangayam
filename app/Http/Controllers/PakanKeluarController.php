@@ -55,7 +55,7 @@ class PakanKeluarController extends Controller
         return view('pages.pakan.pakankeluar.index', [
             'data' => $data,
             'search' => $search,
-            'ayams' => $ayams,
+            'ayams' => Ayam::orderBy('id_ayam', 'desc')->get(), // Urutkan ayam berdasarkan yang terbaru
             'pakans' => $pakans,
             'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
             'kandangs' => \App\Models\Kandang::all(), // Ambil semua data kandang  
@@ -65,8 +65,8 @@ class PakanKeluarController extends Controller
 
     public function create(): View
     {
-        $ayams = \App\Models\Ayam::all(); // Mengambil semua data ayam (periode)
-        $pakans = \App\Models\Pakan::all(); // Mengambil semua data pakan
+        $ayams = \App\Models\Ayam::orderBy('id_ayam', 'desc')->get(); // Urutkan ayam dari terbaru
+        $pakans = \App\Models\Pakan::all(); // Mengambil semua data dari tabel pakan
     
         // Mengambil total stok dari kolom "masuk" pada tabel monitoring_pakan_detail,
         // berdasarkan kombinasi ayam_id dan pakan_id.

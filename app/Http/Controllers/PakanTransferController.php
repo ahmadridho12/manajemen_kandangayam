@@ -53,7 +53,7 @@ class PakanTransferController extends Controller
         return view('pages.pakan.transferpakan.index', [
             'data' => $data,
             'search' => $search,
-            'ayams' => $ayams,
+            'ayams' => Ayam::orderBy('id_ayam', 'desc')->get(), // Urutkan ayam berdasarkan yang terbaru
             'pakans' => $pakans,
             'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
             'kandangs' => \App\Models\Kandang::all(), // Ambil semua data kandang  
@@ -63,7 +63,7 @@ class PakanTransferController extends Controller
 
     public function create(): View
     {
-        $ayams = \App\Models\Ayam::all(); // Mengambil semua data dari tabel unit
+        $ayams = \App\Models\Ayam::orderBy('id_ayam', 'desc')->get(); // Urutkan ayam dari terbaru
         $pakans = \App\Models\Pakan::all(); // Mengambil semua data dari tabel unit
         $kandangs = \App\Models\Kandang::all(); // Mengambil semua data dari tabel unit
 

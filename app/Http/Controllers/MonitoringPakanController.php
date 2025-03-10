@@ -123,19 +123,18 @@ class MonitoringPakanController extends Controller
         if ($id_kandang) {
             $query->where('ayam.kandang_id', $id_kandang);
         }
-    
-        // Menggunakan paginate untuk mendapatkan instance Paginator
-        $data = $query->paginate(50); // 10 item per halaman        return view('ayam.index', compact('ayam'));
-
-        return view('pages.pakan.monitoringpakan.index', [
-            'data' => $data,
-            'search' => $search,
-            // 'sekats' => Sekat::all(),
-            'ayams' => Ayam::all(),
-            'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
-            'kandangs' => \App\Models\Kandang::all(), // Ambil semua data kandang
-
-        ]);
+        $query->orderBy('monitoring_pakan.ayam_id', 'desc')
+        ->orderBy('monitoring_pakan.day', 'asc');
+  
+  $data = $query->paginate(50);
+  
+  return view('pages.pakan.monitoringpakan.index', [
+      'data' => $data,
+      'search' => $search,
+      'ayams' => Ayam::all(),
+      'id_ayam' => $id_ayam,
+      'kandangs' => \App\Models\Kandang::all(),
+  ]);
     }
 
     public function show($id)

@@ -16,43 +16,49 @@ class MonitoringAyamController extends Controller
     //
     public function index(Request $request)
     {
-        $search = $request->input('search'); // Jika ada pencarian
-        $id_ayam = $request->input('id_ayam'); // Input dari dropdown filter
-        $id_kandang = $request->input('id_kandang'); // Filter kandang
-
-        $query = MonitoringAyam::query();
-        $query->join('ayam', 'monitoring_ayam.ayam_id', '=', 'ayam.id_ayam') // Join ke tabel ayam
-      ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang'); // Join ke tabel kandang
-
-
-
-        if ($search) {
-            $query->where('tanggal', 'like', '%' . $search . '%');
-            // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
+        $search = $request->input('search'); // Pencarian berdasarkan tanggal
+        $id_ayam = $request->input('id_ayam'); // Filter ayam berdasarkan periode
+        $id_kandang = $request->input('id_kandang'); // Filter berdasarkan kandang
+    
+        $query = MonitoringAyam::query()
+            ->join('ayam', 'monitoring_ayam.ayam_id', '=', 'ayam.id_ayam')
+            ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang');
+    
+        // Jika user tidak memilih ayam, gunakan ayam terbaru
+        if (!$id_ayam) {
+            $latestAyam = Ayam::orderBy('id_ayam', 'desc')->first();
+            if ($latestAyam) {
+                $query->where('monitoring_ayam.ayam_id', $latestAyam->id_ayam);
+            }
+        } else {
+            $query->where('monitoring_ayam.ayam_id', $id_ayam);
         }
-          // Add ayam filter if selected
-          if ($id_ayam) {
-            $query->where('ayam_id', $id_ayam);
-        }
-
-         // Filter kandang
+    
+        // Filter berdasarkan kandang jika dipilih
         if ($id_kandang) {
             $query->where('ayam.kandang_id', $id_kandang);
         }
-        // Menggunakan paginate untuk mendapatkan instance Paginator
-        $data = $query->paginate(50); // 10 item per halaman        return view('ayam.index', compact('ayam'));
-
+    
+        // Filter pencarian berdasarkan tanggal
+        if ($search) {
+            $query->where('tanggal', 'like', '%' . $search . '%');
+        }
+    
+        // Urutkan berdasarkan ayam terbaru lalu tanggal naik
+        $query->orderBy('monitoring_ayam.ayam_id', 'desc')
+              ->orderBy('monitoring_ayam.tanggal', 'asc');
+    
+        $data = $query->paginate(50);
+    
         return view('pages.inventory.monitoring.index', [
             'data' => $data,
             'search' => $search,
-            // 'sekats' => Sekat::all(),
             'ayams' => Ayam::all(),
-
-            'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
-            'kandangs' => \App\Models\Kandang::all(), // Ambil semua data kandang            'ayams' => Ayam::all(),
+            'id_ayam' => $id_ayam, // Pastikan ini tetap tersimpan di filter
+            'kandangs' => \App\Models\Kandang::all(),
         ]);
     }
-
+    
     public function create()
     {
         // $sekats = Sekat::all();

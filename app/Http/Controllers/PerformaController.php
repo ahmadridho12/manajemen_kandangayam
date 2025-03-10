@@ -97,6 +97,7 @@ class PerformaController extends Controller
             $query->where('kandang_id', $request->id_kandang);
         }
         $query->orderBy('id_ayam', 'desc');
+        $ayams = Ayam::orderBy('id_ayam', 'desc')->get();
 
         // Ambil data paginated
         $data = $query->paginate(10);
@@ -105,7 +106,7 @@ class PerformaController extends Controller
         return view('pages.performa.ip.index', compact(
             'data', 
             'search', 
-            'ayams', 
+            'ayams',
             'kandangs', 
             'dataPanen', 
             'populasiData',

@@ -64,7 +64,7 @@
                                         <strong>{{ $pgaji->ayam->periode }}</strong>
                                     </a>
                                 </td>                               
-                                <td>Rp. {{ number_format($pgaji->hasil_pemeliharaan, 2, ',', '.') }} </td>
+                                <td>Rp. {{ number_format($pgaji->hasil_pemeliharaan, 0, ',', '.') }} </td>
                                 {{-- <td>{{ $ayam->berat_awal }}</td> --}}
                                 <td>Rp. {{ number_format($pgaji->total_potongan, 2, ',', '.') }}</td>                                <td>{{ $pgaji->hasil_setelah_potongan }}</td>
                                 <td>{{ $pgaji->keterangan }}</td>
@@ -80,10 +80,11 @@
                                             data-bs-target="#editModal">
                                         {{ __('menu.general.edit') }}
                                     </button>
-                                    <form action="" method="post" class="d-inline">
+                                    <form action="{{ route('gaji.penggajian.destroy', $pgaji->id_perhitungan) }}"class="d-inline" method="POST">
                                         @csrf
                                         @method('DELETE')
-                                        <button class="btn btn-danger btn-sm btn-delete" type="button">Hapus</button>
+                                        <button class="btn btn-danger btn-sm btn-delete"
+                                        type="button">{{ __('menu.general.delete') }}</button> 
                                     </form>
                                     
                                     

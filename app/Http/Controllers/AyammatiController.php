@@ -48,7 +48,7 @@ class AyammatiController extends Controller
         return view('pages.sistem.keluar.index', [
             'data' => $data,
             'search' => $search,
-            'ayams' => $ayams,
+            'ayams' => Ayam::orderBy('id_ayam', 'desc')->get(), // Urutkan ayam berdasarkan yang terbaru
             'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
             'kandangs' => \App\Models\Kandang::all(), // Am
 

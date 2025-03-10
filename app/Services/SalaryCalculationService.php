@@ -40,11 +40,11 @@ class SalaryCalculationService
         $totalPembelian = $estimasiPembelian['total_pembelian']          ?? 0; // Contoh: total pembelian (rupiah)
 
         // Hitung bonus, misalnya:
-        $bonusFcr      = $avgHarga * 250;  // Bonus FCR
-        $bonusKematian = $avgHarga * 100;  // Bonus kematian
+        $bonusFcr = $totalBB * 250;    // Contoh: 5.904.335
+        $bonusKematian = $totalBB * 100;    // Contoh: 2.361.734
 
         // Total penjualan dianggap sama dengan totalPanen (penjualan daging)
-        $totalPenjualan = $totalPanen;
+        $totalPenjualan = $totalBB * $avgHarga; // Karena total_panen adalah hasil penjualan daging
 
         // Laba bersih: total penjualan + bonus - total pembelian
         $labaBersih = $totalPenjualan + $bonusFcr + $bonusKematian - $totalPembelian;

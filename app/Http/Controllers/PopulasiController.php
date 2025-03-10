@@ -15,47 +15,53 @@ class PopulasiController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->input('search'); // Jika ada pencarian
-        $id_ayam = $request->input('id_ayam'); // Input dari dropdown filter
+        $search = $request->input('search'); // Pencarian berdasarkan hari
+        $id_ayam = $request->input('id_ayam'); // Filter ayam berdasarkan periode
         $id_kandang = $request->input('id_kandang'); // Filter kandang
-
-
-        $query = Populasi::query();
-
-        $query->join('ayam', 'populasi.populasi', '=', 'ayam.id_ayam') // Join ke tabel ayam
-      ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang'); // Join ke tabel kandang
-
-
+    
+        $query = Populasi::query()
+            ->join('ayam', 'populasi.populasi', '=', 'ayam.id_ayam')
+            ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang');
+    
+        // Gunakan id_ayam terbaru hanya jika user tidak memilih filter manual
+        if (!$id_ayam) {
+            $latestAyam = Ayam::orderBy('id_ayam', 'desc')->first();
+            if ($latestAyam) {
+                $query->where('populasi.populasi', $latestAyam->id_ayam);
+                $id_ayam = $latestAyam->id_ayam; // Agar filter tetap terlihat di view
+            }
+        } else {
+            $query->where('populasi.populasi', $id_ayam);
+        }
+    
+        // Filter pencarian berdasarkan hari
         if ($search) {
             $query->where('day', 'like', '%' . $search . '%');
-            // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
         }
-        
-          // Add ayam filter if selected
-          if ($id_ayam) {
-            $query->where('populasi', $id_ayam);
-        }
-
-         // Filter kandang
+    
+        // Filter kandang
         if ($id_kandang) {
             $query->where('ayam.kandang_id', $id_kandang);
         }
     
-        // Menggunakan paginate untuk mendapatkan instance Paginator
-        $data = $query->paginate(50); // 10 item per halaman        return view('ayam.index', compact('ayam'));
-
+        // Urutkan berdasarkan ayam terbaru lalu hari dalam periode naik
+        $query->orderBy('populasi.populasi', 'desc')
+              ->orderBy('populasi.day', 'asc');
+    
+        $data = $query->paginate(50);
+    
         return view('pages.inventory.populasi.index', [
             'data' => $data,
             'search' => $search,
-            // 'sekats' => Sekat::all(),
             'ayams' => Ayam::all(),
-            'id_ayam' => $id_ayam, // Dikirim ke Blade agar filter tetap terpilih
-            'kandangs' => \App\Models\Kandang::all(), // Ambil semua data kandang
-
+            'id_ayam' => $id_ayam, // Pastikan ini tetap ada di filter
+            'kandangs' => \App\Models\Kandang::all(),
             'panens' => Panen::all(),
             'ayammatis' => AyamMati::all(),
         ]);
     }
+    
+
 
     public function print(Request $request) 
 {
