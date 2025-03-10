@@ -20,6 +20,10 @@ class CreateNewUser implements CreatesNewUsers
      */
     public function create(array $input)
     {
+          // ✅ Cek apakah user yang sedang login adalah admin
+    if (!auth()->user() || auth()->user()->role !== 'admin') {
+        abort(403, 'Unauthorized');
+    }
         Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
