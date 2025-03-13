@@ -40,7 +40,7 @@ class OperasionalController extends Controller
         // Menggunakan paginate untuk mendapatkan instance Paginator
         $data = $query->paginate(10); // 10 item per halaman
         $kandangs = Kandang::all(); // Ambil semua data Kandang
-        $ayams = Ayam::all(); // Ambil semua data Kandang
+        $ayams = Ayam::where('status', 'active')->orderBy('id_ayam', 'desc')->get();
 
         return view('pages.gaji.operasional.index', [
             'data' => $data,

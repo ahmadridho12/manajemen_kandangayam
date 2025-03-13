@@ -123,9 +123,13 @@ class PopulasiGeneratorService {
             ->first();
     
         if ($populasiRecord) {
-            // Karena panen dihapus, qty_panen di hari tersebut di-set ke 0
-            $populasiRecord->qty_panen = 0;
-            // qty_now tidak berubah (mengacu pada nilai total dari hari sebelumnya)
+            // Hitung total panen yang tersisa, kecuali record yang akan dihapus
+            $remainingQtyPanen = Panen::where('ayam_id', $panen->ayam_id)
+                ->whereDate('tanggal_panen', $tanggalPanen)
+                ->where('id_panen', '<>', $panen->id_panen)
+                ->sum('quantity');
+    
+            $populasiRecord->qty_panen = $remainingQtyPanen;
             $populasiRecord->total = $populasiRecord->qty_now - ($populasiRecord->qty_mati + $populasiRecord->qty_panen);
             $populasiRecord->save();
         }
@@ -133,6 +137,7 @@ class PopulasiGeneratorService {
         // Update record pada hari-hari berikutnya agar konsisten
         $this->updateSubsequentDays($panen->ayam_id, $tanggalPanen);
     }
+    
     
     public function rollbackPopulasiByAyamMati(AyamMati $ayamMati)
 {

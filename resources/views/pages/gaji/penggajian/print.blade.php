@@ -145,9 +145,8 @@
         </tr>
         <tr>
             <td>Total Pinjaman</td>
-            <td>: Rp {{ number_format($perhitunganGaji->rincianGaji->sum(function($rincian) {
-                return $rincian->pinjaman ? $rincian->pinjaman->jumlah_pinjaman : 0;
-            }), 0, ',', '.') }}</td>
+            <td>: Rp {{ number_format($perhitunganGaji->rincianGaji->sum('jumlah_pinjaman'), 0, ',', '.') }}</Rp></td>
+
         </tr>
         <tr >
             <td>Total Gaji Bersih</td>
@@ -160,14 +159,12 @@
         </tr>
         <tr class="table-success">
             <td>Laba Bersih Kandang</td>
-            <td>
-                <strong>: Rp {{ number_format(
+            <td>: 
+                <strong>Rp {{ number_format(
                     $perhitunganGaji->hasil_pemeliharaan - 
                     $perhitunganGaji->total_potongan - 
                     ($perhitunganGaji->rincianGaji->sum('gaji_pokok') + $perhitunganGaji->rincianGaji->sum('bonus')) +
-                    $perhitunganGaji->rincianGaji->sum(function($rincian) { 
-                        return $rincian->pinjaman ? $rincian->pinjaman->jumlah_pinjaman : 0;
-                    })
+                    $perhitunganGaji->rincianGaji->sum('jumlah_pinjaman')
                 , 0, ',', '.') }}</strong>
             </td>
         </tr>

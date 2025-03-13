@@ -106,7 +106,7 @@
             </tr>
             <tr>
                 <td>Potongan Pinjaman</td>
-                <td style="text-align: right">Rp {{ number_format($rincian->pinjaman ? $rincian->pinjaman->jumlah_pinjaman : 0, 0, ',', '.') }}</td>
+                <td style="text-align: right">Rp {{ number_format($rincian->jumlah_pinjaman ?? 0, 0, ',', '.') }}</td>
             </tr>
             <tr>
                 <th>TOTAL DITERIMA</th>

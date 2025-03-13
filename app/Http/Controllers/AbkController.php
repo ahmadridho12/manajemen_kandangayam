@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Models\Abk;
+use App\Models\Kandang;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ class AbkController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
-    
+        
         // Membuat query dasar
         $query = Abk::query();
     
@@ -24,10 +25,14 @@ class AbkController extends Controller
     
         // Menggunakan paginate untuk mendapatkan instance Paginator
         $data = $query->paginate(10); // 10 item per halaman
+        $kandangs = Kandang::all(); // Ambil semua data Kandang
+
     
         return view('pages.lainnya.abk', [
             'data' => $data,
             'search' => $search,
+            'kandangs' => $kandangs,
+
         ]);
     }
     // public function index()
@@ -43,6 +48,7 @@ class AbkController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'kandang_id' => 'required|exists:kandang,id_kandang', // Pastikan ID kandang valid
             'nama' => 'required|string|max:255',
             'jabatan' => 'required|string|max:255',
             'status' => 'nullable|in:active,nonactive', // Validasi status
@@ -50,6 +56,7 @@ class AbkController extends Controller
         ]);
 
         abk::create([
+            'kandang_id' => $request->kandang_id,
             'nama' => $request->nama,
             'jabatan' => $request->jabatan,
             'status' => $request->status ?? 'active', // Default 'active'
@@ -60,19 +67,22 @@ class AbkController extends Controller
     // Menampilkan form untuk mengedit kandang
     public function edit(Abk $abk)
     {
-        return view('abk.edit', compact('abk'));
+        $kandangs = Kandang::all();
+        return view('abk.edit', compact('abk', 'kandangs'));
     }
 
     // Mengupdate data kandang
     public function update(Request $request, Abk $abk)
 {
     $request->validate([
+        'kandang_id' => 'required|exists:kandang,id_kandang',
         'nama' => 'required|string|max:255',
         'jabatan' => 'required|string|max:255',
         'status' => 'nullable|in:active,nonactive', // Validasi status
     ]);
 
     $abk->update([
+        'kandang_id' => $request->kandang_id,
         'nama' => $request->nama,
         'jabatan' => $request->jabatan,
         'status' => $request->status ?? $abk->status, // Jika status tidak diubah, tetap gunakan yang lama

@@ -125,7 +125,7 @@
                             <td>{{ $rincian->abk->nama }}</td>
                             <td>Rp {{ number_format($rincian->gaji_pokok, 0, ',', '.') }}</td>
                             <td>Rp {{ number_format($rincian->bonus, 0, ',', '.') }}</td>
-                            <td>Rp {{ number_format($rincian->pinjaman ? $rincian->pinjaman->jumlah_pinjaman : 0, 0, ',', '.') }}</td>
+                            <td>Rp {{ number_format($rincian->jumlah_pinjaman, 0, ',', '.') }}</td>
                             <td>Rp {{ number_format($rincian->gaji_bersih, 0, ',', '.') }}</td>
                             <td>
                                 <a href="{{ route('gaji.penggajian.print.slip', $rincian->id_rincian) }}" 
@@ -139,9 +139,8 @@
                             <td colspan="2"><strong>Total</strong></td>
                             <td><strong>Rp {{ number_format($perhitunganGaji->rincianGaji->sum('gaji_pokok'), 0, ',', '.') }}</strong></td>
                             <td><strong>Rp {{ number_format($perhitunganGaji->rincianGaji->sum('bonus'), 0, ',', '.') }}</strong></td>
-                            <td><strong>Rp {{ number_format($perhitunganGaji->rincianGaji->sum(function($rincian) { 
-                                return $rincian->pinjaman ? $rincian->pinjaman->jumlah_pinjaman : 0;
-                            }), 0, ',', '.') }}</strong></td>
+                            <td><strong>Rp {{ number_format($perhitunganGaji->rincianGaji->sum('jumlah_pinjaman'), 0, ',', '.') }}</strong></td>
+
                             <td><strong>Rp {{ number_format($perhitunganGaji->rincianGaji->sum('gaji_bersih'), 0, ',', '.') }}</strong></td>
                             <td></td>
                         </tr>
@@ -173,9 +172,8 @@
                     </tr>
                     <tr>
                         <th>Total Pinjaman</th>
-                        <td>Rp {{ number_format($perhitunganGaji->rincianGaji->sum(function($rincian) { 
-                            return $rincian->pinjaman ? $rincian->pinjaman->jumlah_pinjaman : 0;
-                        }), 0, ',', '.') }}</td>
+                        <td><strong>Rp {{ number_format($perhitunganGaji->rincianGaji->sum('jumlah_pinjaman'), 0, ',', '.') }}</strong></td>
+
                     </tr>
                     <tr class="table-success">
                         <th>Keuntungan Bersih Kandang</th>
@@ -184,12 +182,11 @@
                                 $perhitunganGaji->hasil_pemeliharaan - 
                                 $perhitunganGaji->total_potongan - 
                                 ($perhitunganGaji->rincianGaji->sum('gaji_pokok') + $perhitunganGaji->rincianGaji->sum('bonus')) +
-                                $perhitunganGaji->rincianGaji->sum(function($rincian) { 
-                                    return $rincian->pinjaman ? $rincian->pinjaman->jumlah_pinjaman : 0;
-                                })
+                                $perhitunganGaji->rincianGaji->sum('jumlah_pinjaman')
                             , 0, ',', '.') }}</strong>
                         </td>
                     </tr>
+                    
                 </table>
             </div>
         </div>

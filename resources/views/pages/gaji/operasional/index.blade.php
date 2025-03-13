@@ -152,6 +152,7 @@
                                 <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>
                             @endforeach
                         </select>
+                        
                     </div>  
                     <x-input-form name="nama_potongan" :label="__('Nama Biaya')" />
                     <x-input-form name="jumlah" :label="__('Total')" type="number"/>

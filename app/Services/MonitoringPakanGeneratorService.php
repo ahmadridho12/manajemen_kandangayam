@@ -345,6 +345,31 @@ class MonitoringPakanGeneratorService
     });
 }
 
+public function rollbackPakanKeluar(PakanKeluar $pakanKeluar)
+{
+    $dateStr = Carbon::parse($pakanKeluar->tanggal)->format('Y-m-d');
+    
+    // Hitung total qty pakan keluar yang tersisa (kecuali record yang dihapus)
+    $remainingQty = PakanKeluar::where('ayam_id', $pakanKeluar->ayam_id)
+                        ->whereDate('tanggal', $dateStr)
+                        ->where('id', '<>', $pakanKeluar->id) // pastikan mengecualikan record yang akan dihapus
+                        ->sum('qty');
+    
+    // Update data monitoring pakan untuk tanggal tersebut
+    $monitoring = MonitoringPakan::where('ayam_id', $pakanKeluar->ayam_id)
+                        ->whereDate('tanggal', $dateStr)
+                        ->first();
+    
+    if ($monitoring) {
+        $monitoring->update([
+            'keluar'     => $remainingQty,
+            'updated_at' => now()
+        ]);
+    }
+    
+    // Update sisa pakan agar konsisten
+    $this->updateSisaPakan($pakanKeluar->ayam_id, $dateStr);
+}
 
     
     // Fungsi untuk mengupdate sisa pakan untuk semua tanggal setelah perubahan
@@ -379,7 +404,8 @@ class MonitoringPakanGeneratorService
             $runningSisa = $newSisa;
         }
     }
-    private function updateSisaPakan($ayam_id, $tanggal)
+   // Ubah dari private menjadi public
+public function updateSisaPakan($ayam_id, $tanggal)
 {
     // Ambil semua data monitoring dari tanggal yang ditentukan ke depan (urut ascending)
     $monitorings = MonitoringPakan::where('ayam_id', $ayam_id)
@@ -397,9 +423,8 @@ class MonitoringPakanGeneratorService
     $running_sisa = $previousSisa;
 
     foreach ($monitorings as $monitoring) {
-        // PERBAIKAN: Gunakan nilai total_transfer langsung dari objek monitoring
-        // tanpa query ulang
-        $fresh_total_transfer = (int) $monitoring->total_transfer ?? 0;
+        // Gunakan nilai total_transfer langsung dari objek monitoring (jika ada)
+        $fresh_total_transfer = (int) ($monitoring->total_transfer ?? 0);
 
         // Hitung sisa hari ini dengan rumus: sisa = running_sisa + total_masuk + total_transfer - keluar
         $sisa_hari_ini = $running_sisa 
@@ -414,7 +439,7 @@ class MonitoringPakanGeneratorService
         $running_sisa = $sisa_hari_ini;
     }
 }
-    
+
     
     
 }

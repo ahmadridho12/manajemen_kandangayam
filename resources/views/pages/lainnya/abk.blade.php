@@ -8,6 +8,7 @@
 
             $('#editModal form').attr('action', '{{ route('lainnya.abk.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
+            $('#editModal input#kandang_id').val($(this).data('kandang_id'));
             $('#editModal input#nama').val($(this).data('nama'));
             $('#editModal input#jabatan').val($(this).data('jabatan'));
             $('#editModal select#status').val(status);
@@ -33,6 +34,7 @@
             <table class="table">
                 <thead>
                 <tr><th>No</th>
+                    <th>{{ __('Kandang') }}</th>
                     <th>{{ __('Nama ') }}</th>
                     <th>{{ __('Jabatan') }}</th>
                     <th>{{ __('Status') }}</th> <!-- Tambahkan kolom status -->
@@ -46,6 +48,7 @@
                         <tr>
                             <td>{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
 
+                            <td>{{ $abk->kandang->nama_kandang }}</td>
                             <td>{{ $abk->nama }}</td>
                             <td>{{ $abk->jabatan }}</td>
                             <td>
@@ -57,6 +60,7 @@
                             <td>
                                 <button class="btn btn-info btn-sm btn-edit"
                                         data-id="{{ $abk->id_abk }}"
+                                        data-kandang_id="{{ $abk->kandang_id }}"
                                         data-nama="{{ $abk->nama }}"
                                         data-jabatan="{{ $abk->jabatan }}"
                                         data-status="{{ $abk->status }}" 
@@ -104,6 +108,14 @@
                     ></button>
                 </div>
                 <div class="modal-body">
+                    <div class="col-sm-12 col-12 col-md-6 col-lg-12">
+                        <label for="id_kandang" class="form-label">{{ __('Nama Kandang') }}</label>
+                        <select name="kandang_id" id="id_kandang" class="form-control">
+                            @foreach($kandangs as $kandang)
+                                <option value="{{ $kandang->id_kandang }}">{{ $kandang->nama_kandang }}</option>
+                            @endforeach
+                        </select>
+                    </div> 
                     <x-input-form name="nama" :label="__('Nama Petugas')"/>
                     <x-input-form name="jabatan" :label="__('Jabatan')" />
                     <div class="form-group">
@@ -142,6 +154,14 @@
                 
                 <div class="modal-body">
                     <input type="hidden" name="id" id="id" value="">
+                    <div class="col-sm-12 col-12 col-md-6 col-lg-12">
+                        <label for="id_kandang" class="form-label">{{ __('Nama Kandang') }}</label>
+                        <select name="kandang_id" id="id_kandang" class="form-control">
+                            @foreach($kandangs as $kandang)
+                                <option value="{{ $kandang->id_kandang }}">{{ $kandang->nama_kandang }}</option>
+                            @endforeach
+                        </select>
+                    </div> 
                     <x-input-form name="nama" :label="__('Nama Petugas')" id="nama"/>
                     <x-input-form name="jabatan" :label="__('Jabatan')"  id="jabatan"/>
                     <div class="form-group">

@@ -7,8 +7,8 @@
             $('#editModal form').attr('action', '{{ route('lainnya.kandang.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
             $('#editModal input#nama_kandang').val($(this).data('nama_kandang'));
-            $('#editModal input#tanggal_mulai').val($(this).data('tanggal_mulai'));
-            $('#editModal input#tanggal_selesai').val($(this).data('tanggal_selesai'));
+            // $('#editModal input#tanggal_mulai').val($(this).data('tanggal_mulai'));
+            // $('#editModal input#tanggal_selesai').val($(this).data('tanggal_selesai'));
         });
     </script>
 @endpush
@@ -31,8 +31,8 @@
                 <thead>
                 <tr><th>No</th>
                     <th>{{ __('Nama Kandang') }}</th>
-                    <th>{{ __('Tanggal Mulai') }}</th>
-                    <th>{{ __('Tanggal Selesai') }}</th>
+                    {{-- <th>{{ __('Tanggal Mulai') }}</th>
+                    <th>{{ __('Tanggal Selesai') }}</th> --}}
                     <th>{{ __('menu.general.action') }}</th>
                 </tr>
                 </thead>
@@ -43,14 +43,14 @@
                             <td>{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
 
                             <td>{{ $k->nama_kandang }}</td>
-                            <td>{{ $k->tanggal_mulai }}</td>
-                            <td>{{ $k->tanggal_selesai }}</td>
+                            {{-- <td>{{ $k->tanggal_mulai }}</td>
+                            <td>{{ $k->tanggal_selesai }}</td> --}}
                             <td>
                                 <button class="btn btn-info btn-sm btn-edit"
                                         data-id="{{ $k->id_kandang }}"
                                         data-nama_kandang="{{ $k->nama_kandang }}"
-                                        data-tanggal_mulai="{{ $k->tanggal_mulai }}"
-                                        data-tanggal_selesai="{{ $k->tanggal_selesai }}"
+                                        {{-- data-tanggal_mulai="{{ $k->tanggal_mulai }}"
+                                        data-tanggal_selesai="{{ $k->tanggal_selesai }}" --}}
                                         data-bs-toggle="modal"
                                         data-bs-target="#editModal">
                                     {{ __('menu.general.edit') }}
@@ -96,8 +96,8 @@
                 </div>
                 <div class="modal-body">
                     <x-input-form name="nama_kandang" :label="__('Nama Kandang')"/>
-                    <x-input-form name="tanggal_mulai" :label="__('Tanggal Mulai')" type="date"/>
-                    <x-input-form name="tanggal_selesai" :label="__('Tanggal Selesai')" type="date"/>
+                    {{-- <x-input-form name="tanggal_mulai" :label="__('Tanggal Mulai')" type="date"/>
+                    <x-input-form name="tanggal_selesai" :label="__('Tanggal Selesai')" type="date"/> --}}
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">

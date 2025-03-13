@@ -9,9 +9,10 @@ class DashboardCardSimple extends Component
     public string $label;
     public string $color;
     public string $icon;
-    public int $value;
+    public mixed $value; // Diubah dari int ke mixed
     public float $percentage;
     public bool $daily;
+
     /**
      * Create a new component instance.
      *

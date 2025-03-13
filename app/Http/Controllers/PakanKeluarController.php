@@ -17,6 +17,12 @@ use Illuminate\Support\Facades\Log;
 class PakanKeluarController extends Controller
 {
     //
+    protected $monitoringPakanService;
+
+    public function __construct(MonitoringPakanGeneratorService $monitoringPakanService)
+    {
+        $this->monitoringPakanService = $monitoringPakanService;
+    }
     public function index(Request $request)
     {
         $search = $request->input('search');
@@ -220,30 +226,36 @@ public function store(Request $request): RedirectResponse
             
             // Ambil data yang diperlukan
             $totalBerat = $pakanKeluar->total_berat;
-            $ayamId = $pakanKeluar->ayam_id;
-            $pakanId = $pakanKeluar->pakan_id;
-            $tanggal = $pakanKeluar->tanggal;
+            $ayamId     = $pakanKeluar->ayam_id;
+            $pakanId    = $pakanKeluar->pakan_id;
+            $tanggal    = $pakanKeluar->tanggal;
             
-            // Cari monitoring sebelumnya pada tanggal yang sama
+            // Hitung total keluar (qty) yang tersisa untuk tanggal tersebut,
+            // kecuali record yang akan dihapus
+            $newKeluar = PakanKeluar::where('ayam_id', $ayamId)
+                ->whereDate('tanggal', $tanggal)
+                ->where('id', '<>', $pakanKeluar->id)
+                ->sum('qty');
+
+            // Cari monitoring sebelumnya pada tanggal yang lebih kecil dari $tanggal
             $monitoringSebelumnya = DB::table('monitoring_pakan')
                 ->where('ayam_id', $ayamId)
                 ->whereDate('tanggal', '<', $tanggal)
                 ->orderBy('tanggal', 'desc')
                 ->first();
-    
-            // Ambil nilai sisa yang akan digunakan
-            $sisaBaru = $monitoringSebelumnya ? $monitoringSebelumnya->sisa : $totalBerat;
+
+            $sisaBaru = $monitoringSebelumnya ? $monitoringSebelumnya->sisa : 0;
             
-            // Update tabel monitoring_pakan
+            // Update record di tabel monitoring_pakan untuk tanggal yang sama
             DB::table('monitoring_pakan')
                 ->where('ayam_id', $ayamId)
                 ->whereDate('tanggal', $tanggal)
                 ->update([
-                    'keluar' => 0,  // Reset ke 0
-                    'sisa' => $sisaBaru // Gunakan sisa dari monitoring sebelumnya
+                    'keluar' => $newKeluar,
+                    'sisa'   => $sisaBaru  // nanti akan dihitung ulang lewat service
                 ]);
             
-            // Update tabel monitoring_pakan_detail
+            // Update tabel monitoring_pakan_detail: kembalikan stok pakan keluar ke stok masuk
             $monitoringDetail = DB::table('monitoring_pakan_detail')
                 ->where('ayam_id', $ayamId)
                 ->where('pakan_id', $pakanId)
@@ -254,7 +266,7 @@ public function store(Request $request): RedirectResponse
                     ->where('ayam_id', $ayamId)
                     ->where('pakan_id', $pakanId)
                     ->update([
-                        'masuk' => DB::raw("masuk + {$pakanKeluar->qty}"),
+                        'masuk'       => DB::raw("masuk + {$pakanKeluar->qty}"),
                         'total_berat' => DB::raw("total_berat + $totalBerat")
                     ]);
             }
@@ -262,8 +274,12 @@ public function store(Request $request): RedirectResponse
             // Hapus record pakan_keluar
             $pakanKeluar->delete();
             
-            DB::commit();
+            // Panggil service untuk update sisa pakan mulai dari tanggal tersebut
+            $monitoringpakanService = new MonitoringPakanGeneratorService();
+
+            $this->monitoringPakanService->updateSisaPakan($ayamId, $tanggal);
             
+            DB::commit();
             return redirect()->route('pakan.pakankeluar.index')
                 ->with('success', 'Data Pakan Keluar berhasil dihapus dan stok pakan telah dikembalikan.');
                 
@@ -273,6 +289,7 @@ public function store(Request $request): RedirectResponse
                 ->with('error', 'Terjadi kesalahan saat menghapus data: ' . $e->getMessage());
         }
     }
+    
     public function getPakan()
     {
         $pakans = Pakan::all(); // Ambil semua barang dari database

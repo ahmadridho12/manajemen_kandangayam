@@ -222,7 +222,9 @@ class IndexPerformanceService
             // Mengambil total ayam yang sudah dipanen
             $ayamPanen = Populasi::where('populasi', $populasi)
                                  ->sum('qty_panen');
-    
+
+            $totalAyam = $ayam->qty_ayam;
+            $persentaseMati = $totalAyam > 0 ? ($ayamMati / $totalAyam) * 100 : 0;    
             return [
                 'status' => true,
                 'data' => [
@@ -230,6 +232,7 @@ class IndexPerformanceService
                     'ayam_mati' => $ayamMati,
                     'ayam_sisa' => $ayamSisa,
                     'ayam_panen' => $ayamPanen,
+                    'persentase_mati' => $persentaseMati
                 ],
                 'message' => 'Data populasi kandang berhasil diambil',
             ];

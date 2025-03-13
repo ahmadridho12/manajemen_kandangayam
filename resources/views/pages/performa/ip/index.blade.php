@@ -68,6 +68,7 @@ $(document).ready(function() {
 
             $('#populasiAwal').text(number_format(populasiData.populasi_awal) + ' Ekor');
             $('#ayamMati').text(number_format(populasiData.ayam_mati) + ' Ekor');
+            $('#persentaseMati').text(number_format(populasiData.persentase_mati, 2) + ' %');
             $('#ayamSisa').text(number_format(populasiData.ayam_sisa) + ' Ekor');
             $('#ayamPanen').text(number_format(populasiData.ayam_panen) + ' Ekor');
         } else {
@@ -356,11 +357,18 @@ function number_format(number, decimals = 0) {
                 <div class="col-md-3">
                     <div class="card bg-danger text-white">
                         <div class="card-body">
-                            <h6 style="color: white" class="card-title">Ayam Mati</h6>
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <h6 style="color: white" class="card-title">Ayam Mati</h6>
+                                <h5 style="color: white; font-size: 14px;" class="card-text" id="persentaseMati">(0%)</h5>
+                            </div>
                             <h3 style="color: white" class="card-text" id="ayamMati">0 Ekor</h3>
                         </div>
                     </div>
                 </div>
+                
+                
+                
+               
                 <div class="col-md-3">
                     <div class="card bg-warning text-dark">
                         <div class="card-body">

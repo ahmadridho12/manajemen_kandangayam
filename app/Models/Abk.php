@@ -11,10 +11,19 @@ class Abk extends Model
 
     protected $table = 'abk';
     protected $primaryKey = 'id_abk';
+    public $timestamps = true; // Agar Laravel mengelola created_at dan updated_at secara otomatis
+
     protected $fillable = [
         'nama',
+        'kandang_id',
         'jabatan',
         'status',
-        'craeted_at'
+        'created_at'
     ];
+
+    public function kandang()
+    {
+        return $this->belongsTo(Kandang::class, 'kandang_id', 'id_kandang');
+    }
+
 }

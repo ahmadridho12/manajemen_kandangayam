@@ -31,16 +31,7 @@ use App\Http\Controllers\TarifAirController;
 use App\Models\MonitoringAyam;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| Web Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
-|
-*/
+
 
 Route::middleware(['auth', 'session.timeout'])->group(function () {
     Route::get('/', [\App\Http\Controllers\PageController::class, 'index'])->name('home');
@@ -66,6 +57,10 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
 
     Route::delete('attachment', [\App\Http\Controllers\PageController::class, 'removeAttachment'])
         ->name('attachment.destroy');
+      // Tambahkan route untuk chart di sini, karena controller-nya adalah PageController
+      Route::get('/chart/ayamMati', [\App\Http\Controllers\PageController::class, 'chartAyamMati'])->name('chart.ayamMati');
+      Route::get('/chart/ayamPanen', [\App\Http\Controllers\PageController::class, 'chartAyamPanen'])->name('chart.ayamPanen');
+      Route::get('/chart/combined', [\App\Http\Controllers\PageController::class, 'chartCombined'])->name('chart.combined');
 
     // Rute admin
     Route::get('/admin', [UserController::class, 'index'])->name('admin.index');

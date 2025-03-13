@@ -25,6 +25,7 @@ class RincianGajiAbk extends Model
         'gaji_pokok',
         'bonus',
         'pinjaman_id',
+        'jumlah_pinjaman',
         'gaji_bersih'
     ];
 
