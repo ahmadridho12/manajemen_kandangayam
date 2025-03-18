@@ -6,7 +6,7 @@
             const id = $(this).data('id');
             $('#editModal form').attr('action', '{{ route('sistem.keluar.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
-            $('#editModal input#ayam_id').val($(this).data('ayam_id'));
+            $('#editModal select#id_ayam').val($(this).data('ayam_id'));
             $('#editModal input#tanggal_mati').val($(this).data('tanggal_mati'));
             $('#editModal input#quantity_mati').val($(this).data('quantity_mati'));
             $('#editModal input#alasan').val($(this).data('alasan'));
@@ -174,7 +174,7 @@
                 <div class="modal-body">
                     <input type="hidden" name="id" id="id" value="">
                     <div class="col-sm-12 col-12 col-md-6 col-lg-12">
-                        <label for="id_ayam" class="form-label">{{ __('Periode') }}</label>
+                        <label for="id_ayam">Periode</label>
                         <select name="ayam_id" id="id_ayam" class="form-control">
                             @foreach($ayams as $ayam)
                                 <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>

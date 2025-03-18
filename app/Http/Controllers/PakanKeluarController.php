@@ -69,49 +69,21 @@ class PakanKeluarController extends Controller
         ]);
     }
 
-    public function create(): View
-    {
-        $ayams = \App\Models\Ayam::orderBy('id_ayam', 'desc')->get(); // Urutkan ayam dari terbaru
-        $pakans = \App\Models\Pakan::all(); // Mengambil semua data dari tabel pakan
+    public function create(Request $request)
+{
+    $ayams = Ayam::orderBy('id_ayam', 'desc')->get();
+    $pakans = Pakan::all();
     
-        // Mengambil total stok dari kolom "masuk" pada tabel monitoring_pakan_detail,
-        // berdasarkan kombinasi ayam_id dan pakan_id.
-        $stokData = DB::table('monitoring_pakan_detail')
-            ->select('ayam_id', 'pakan_id', DB::raw('SUM(masuk) as total_stok'))
-            ->groupBy('ayam_id', 'pakan_id')
-            ->get();
-    
-        Log::info('Stok Data Raw:', $stokData->toArray());
-    
-        // Ubah collection menjadi nested array: [ayam_id => [pakan_id => total_stok]]
-        $stokDataArray = [];
-        foreach ($stokData as $item) {
-            $stokDataArray[$item->ayam_id][$item->pakan_id] = $item->total_stok;
-        }
-    
-        return view('pages.pakan.pakankeluar.add', [
-            'ayams'    => $ayams,
-            'pakans'   => $pakans,
-            'stokData' => $stokDataArray,
-        ]);
+    $stokTersedia = 0;
+    if ($request->filled('ayam_id') && $request->filled('pakan_id')) {
+        $stokTersedia = DB::table('monitoring_pakan_detail')
+            ->where('ayam_id', $request->ayam_id)
+            ->where('pakan_id', $request->pakan_id)
+            ->value('masuk') ?? 0;
     }
     
-    
-//     public function getStokPakan($ayam_id, $pakan_id)
-// {
-//     Log::info("getStokPakan called with ayam_id: {$ayam_id}, pakan_id: {$pakan_id}");
-
-//     // Ambil total qty (masuk) dari monitoring_pakan_detail
-//     $stokTersedia = DB::table('monitoring_pakan_detail')
-//         ->where('ayam_id', $ayam_id)
-//         ->where('pakan_id', $pakan_id)
-//         ->sum('masuk'); // Menjumlahkan qty masuk untuk pakan yang dipilih
-
-//     $stokTersedia = $stokTersedia ?? 0; // Jika null, set ke 0
-//     Log::info("Stok tersedia: {$stokTersedia}");
-
-//     return response()->json(['stok' => $stokTersedia]);
-// }
+    return view('pages.pakan.pakankeluar.add', compact('ayams', 'pakans', 'stokTersedia'));
+}
 
 
     

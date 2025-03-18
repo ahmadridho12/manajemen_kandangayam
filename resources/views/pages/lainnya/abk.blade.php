@@ -8,7 +8,7 @@
 
             $('#editModal form').attr('action', '{{ route('lainnya.abk.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
-            $('#editModal input#kandang_id').val($(this).data('kandang_id'));
+            $('#editModal select#id_kandang').val($(this).data('kandang_id'));
             $('#editModal input#nama').val($(this).data('nama'));
             $('#editModal input#jabatan').val($(this).data('jabatan'));
             $('#editModal select#status').val(status);

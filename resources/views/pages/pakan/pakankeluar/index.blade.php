@@ -6,14 +6,17 @@
         const id = $(this).data('id');
         $('#editModal form').attr('action', '{{ route('pakan.pakankeluar.update', '') }}/' + id);
         $('#editModal input:hidden#id').val(id);
-        $('#editModal input#ayam_id').val($(this).data('ayam_id'));
-        $('#editModal input#pakan_id').val($(this).data('pakan_id'));
+        // Gunakan selector yang benar, yaitu select#id_ayam dan select#id_pakan
+        $('#editModal select#id_ayam').val($(this).data('ayam_id'));
+        $('#editModal select#id_pakan').val($(this).data('pakan_id'));
         $('#editModal input#tanggal').val($(this).data('tanggal'));
         $('#editModal input#qty').val($(this).data('qty'));
         $('#editModal input#berat_zak').val($(this).data('berat_zak'));
         $('#editModal input#total_berat').val($(this).data('total_berat'));
     });
 </script>
+
+
 @endpush
 
 @section('content')

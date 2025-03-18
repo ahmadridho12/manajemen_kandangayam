@@ -6,12 +6,13 @@
             const id = $(this).data('id');
             $('#editModal form').attr('action', '{{ route('pakan.pakanmasuk.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
-            $('#editModal input#ayam_id').val($(this).data('ayam_id'));
-            $('#editModal input#pakan_id').val($(this).data('pakan_id'));
+            $('#editModal select#id_ayam').val($(this).data('ayam_id'));
+            $('#editModal select#id_pakan').val($(this).data('pakan_id'));
             $('#editModal input#tanggal').val($(this).data('tanggal'));
             $('#editModal input#masuk').val($(this).data('masuk'));
             $('#editModal input#berat_zak').val($(this).data('berat_zak'));
             $('#editModal input#total_berat').val($(this).data('total_berat'));
+            $('#editModal input#total_harga_pakan').val($(this).data('total_harga_pakan'));
         });
     </script>
 @endpush
@@ -98,6 +99,8 @@
                                         data-masuk="{{ $pm->masuk }}"
                                         data-berat_zak="{{ $pm->berat_zak }}"
                                         data-total_berat="{{ $pm->total_berat }}"
+                                        data-total_berat="{{ $pm->total_berat }}"
+                                        data-total_harga_pakan="{{ $pm->total_harga_pakan }}"
                                         data-bs-toggle="modal"
                                         data-bs-target="#editModal">
                                     {{ __('menu.general.edit') }}
@@ -196,10 +199,10 @@
                     </div>
                     
                     <!-- Harga (readonly) -->
-                    <div class="mb-3">
-                        <label for="harga" class="form-label">{{ __('Harga') }}</label>
-                        <input type="number" class="form-control" id="harga" name="harga" value="{{ old('harga') }}" readonly/>
-                    </div>
+                    {{-- <div class="col-sm-12 col-12 col-md-6 col-lg-4">
+                        <label for="harga" class="form-label">Harga</label>
+                        <input type="number" class="form-control" id="harga" name="harga" readonly>
+                    </div> --}}
                     
                     <!-- Jumlah -->
                     <div class="mb-3">
@@ -217,8 +220,8 @@
                     </div>
                     
                     <!-- Total Harga (readonly) -->
-                    <div class="mb-3">
-                        <x-readonly-input name="total_harga_pakan" :label="'Total Harga'" :value="old('total_harga_pakan')" type="text"/>
+                    <div class="col-sm-12 col-12 col-md-6 col-lg-4">
+                        <x-readonly-input name="total_harga_pakan" id="total_harga_pakan" :label="'Total Harga'" ... />
                     </div>
                 </div>
                 
@@ -235,6 +238,7 @@
     @section('scripts')
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Gunakan selector untuk modal edit; misalnya "id_pakan" pada modal edit
             const pakanSelect = document.getElementById("id_pakan");
             const hargaInput = document.getElementById("harga");
     
@@ -242,37 +246,47 @@
             if (pakanSelect) {
                 pakanSelect.addEventListener("change", function () {
                     const pakans = @json($pakans);
-                    const selectedPakan = pakans.find(p => p.id_pakan == this.value);
+                    const selectedPakan = pakans.find(pakan => pakan.id_pakan == this.value);
+        
                     if (selectedPakan) {
-                        hargaInput.value = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(selectedPakan.harga);
+                        hargaInput.value = formatNumber(selectedPakan.harga);
                     } else {
                         hargaInput.value = '';
                     }
+        
                     hitungTotal();
                 });
             }
-    
-            // Event hitung total saat jumlah atau berat berubah
+        
+            // Event hitung total saat input jumlah atau berat per zak berubah
             $('#masuk, #berat_zak').on('keyup change', function () {
                 hitungTotal();
             });
-    
+        
+            // Fungsi Format Number (misalnya untuk ribuan)
+            function formatNumber(number) {
+                return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(number);
+            }
+        
+            // Fungsi Hitung Total Berat & Harga
             function hitungTotal() {
                 let masuk = parseFloat($('#masuk').val().replace(/\./g, '')) || 0;
                 let berat_zak = parseFloat($('#berat_zak').val().replace(/\./g, '')) || 0;
                 let harga = parseFloat($('#harga').val().replace(/\./g, '')) || 0;
-    
+        
                 let total_berat = masuk * berat_zak;
                 let total_harga_pakan = total_berat * harga;
-    
-                $('#total_berat').val(new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(total_berat));
-                $('#total_harga_pakan').val(new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(total_harga_pakan));
+        
+                $('#total_berat').val(formatNumber(total_berat));
+                $('#total_harga_pakan').val(formatNumber(total_harga_pakan));
             }
-    
-            // Trigger perubahan pakan agar harga langsung terisi saat modal dibuka
-            $('#id_pakan').trigger('change');
+        
+            // Trigger perubahan select pakan saat modal edit dibuka
+            $(pakanSelect).trigger('change');
         });
     </script>
+    
+    
     @endsection
     
 @endsection

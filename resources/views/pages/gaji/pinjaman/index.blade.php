@@ -6,9 +6,9 @@
             const id = $(this).data('id');
             $('#editModal form').attr('action', '{{ route('gaji.pinjaman.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
-            $('#editModal input#abk_id').val($(this).data('abk_id'));
-            $('#editModal input#kandang_id').val($(this).data('kandang_id'));
-            $('#editModal input#ayam_id').val($(this).data('ayam_id'));
+            $('#editModal select#id_abk').val($(this).data('abk_id'));
+            $('#editModal select#id_kandang').val($(this).data('kandang_id'));
+            $('#editModal select#id_ayam').val($(this).data('ayam_id'));
             $('#editModal input#jumlah_pinjaman').val($(this).data('jumlah_pinjaman'));
             $('#editModal input#tanggal_pinjam').val($(this).data('tanggal_pinjam'));
         });
@@ -88,7 +88,7 @@
                             <td>
                                 <button class="btn btn-info btn-sm btn-edit"
                                         data-id="{{ $pj->id_pinjaman }}"
-                                        data-abk_id="{{ $pj->abk }}"
+                                        data-abk_id="{{ $pj->abk_id }}"
                                         data-kandang_id="{{ $pj->kandang_id }}"
                                         data-ayam_id="{{ $pj->ayam_id }}"
                                         data-jumlah_pinjaman="{{ $pj->jumlah_pinjaman }}"

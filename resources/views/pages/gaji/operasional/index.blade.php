@@ -6,8 +6,8 @@
             const id = $(this).data('id');
             $('#editModal form').attr('action', '{{ route('gaji.operasional.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
-            $('#editModal input#kandang_id').val($(this).data('kandang_id'));
-            $('#editModal input#ayam_id').val($(this).data('ayam_id'));
+            $('#editModal select#kandang_id').val($(this).data('kandang_id'));
+            $('#editModal select#id_ayam').val($(this).data('ayam_id'));
             $('#editModal input#nama_potongan').val($(this).data('nama_potongan'));
             $('#editModal input#jumlah').val($(this).data('jumlah'));
             $('#editModal input#tanggal').val($(this).data('tanggal'));
@@ -195,7 +195,7 @@
                         </select>
                     </div>  
                     <div class="col-sm-12 col-12 col-md-6 col-lg-12">
-                        <label for="id_ayam" class="form-label">{{ __('Periode') }}</label>
+                        <label for="id_ayam">Periode</label>
                         <select name="ayam_id" id="id_ayam" class="form-control">
                             @foreach($ayams as $ayam)
                                 <option value="{{ $ayam->id_ayam }}">{{ $ayam->periode }}</option>

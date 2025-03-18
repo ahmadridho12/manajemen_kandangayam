@@ -30,6 +30,8 @@ use App\Models\Permission;
 use App\Http\Controllers\TarifAirController;
 use App\Models\MonitoringAyam;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 
 
@@ -104,8 +106,19 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/pakankeluar/create', [PakanKeluarController::class, 'create'])->name('pakankeluar.create');
         Route::post('/pakankeluar/store', [PakanKeluarController::class, 'store'])->name('pakankeluar.store');
         Route::delete('/pakankeluar/{id}', [PakanKeluarController::class, 'destroy'])->name('pakankeluar.destroy');
-        Route::get('/pakankeluar/getStokPakan/{ayam_id}/{pakan_id}', [PakanKeluarController::class, 'getStokPakan'])
-        ->name('pakankeluar.getStokPakan');
+        Route::get('/get-stok-pakan', function (Request $request) {
+            $ayamId = $request->query('ayam_id');
+            $pakanId = $request->query('pakan_id');
+        
+            $stok = DB::table('monitoring_pakan_detail')
+                ->where('ayam_id', $ayamId)
+                ->where('pakan_id', $pakanId)
+                ->value('masuk') ?? 0;
+        
+            return response()->json(['stok' => $stok]);
+        })->name('get-stok-pakan');
+        
+        
         Route::resource('/transferpakan', \App\Http\Controllers\PakanTransferController::class);
         Route::get('/transferpakan/create', [PakanTransferController::class, 'create'])->name('transferpakan.create');
         Route::post('/transferpakan/store', [PakanTransferController::class, 'store'])->name('transferpakan.store');

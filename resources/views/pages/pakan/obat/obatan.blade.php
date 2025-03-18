@@ -6,8 +6,8 @@
             const id = $(this).data('id');
             $('#editModal form').attr('action', '{{ route('pakan.obat.update', '') }}/' + id);
             $('#editModal input:hidden#id').val(id);
-            $('#editModal input#kandang_id').val($(this).data('kandang_id'));
-            $('#editModal input#ayam_id').val($(this).data('ayam_id'));
+            $('#editModal select#id_kandang').val($(this).data('kandang_id'));
+            $('#editModal select#id_ayam').val($(this).data('ayam_id'));
             $('#editModal input#nama_obat').val($(this).data('nama_obat'));
             $('#editModal input#total').val($(this).data('total'));
           
