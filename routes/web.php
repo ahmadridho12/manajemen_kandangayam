@@ -16,6 +16,7 @@ use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\MonitoringAyamController;
 use App\Http\Controllers\MonitoringPakanController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\PakanMasukController;
 use App\Http\Controllers\PakanKeluarController;
 use App\Http\Controllers\PakanTransferController;
@@ -37,6 +38,11 @@ use Illuminate\Http\Request;
 
 Route::middleware(['auth', 'session.timeout'])->group(function () {
     Route::get('/', [\App\Http\Controllers\PageController::class, 'index'])->name('home');
+    Route::get('/dashboard/chart-data', [\App\Http\Controllers\PageController::class, 'getChartData'])->name('dashboard.chart-data');
+    Route::get('/inventory/populasi/chart-data', [\App\Http\Controllers\PopulasiController::class, 'getChartData'])
+    ->name('populasi.chart-data');
+    Route::get('/pakan/monitoring/chart-data', [\App\Http\Controllers\MonitoringPakanController::class, 'getChartData'])
+    ->name('monitoringpakan.chart-data');
 
     Route::resource('user', \App\Http\Controllers\UserController::class)
         ->except(['show', 'edit', 'create'])
@@ -89,6 +95,7 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::resource('/monitoring', \App\Http\Controllers\MonitoringAyamController::class);
         Route::get('/monitoring/create', [MonitoringAyamController::class, 'create'])->name('monitoring.create');
         Route::post('/monitoring/store', [MonitoringAyamController::class, 'store'])->name('monitoring.store');
+
 
     });
     Route::prefix('pakan')->as('pakan.')->group(function () {

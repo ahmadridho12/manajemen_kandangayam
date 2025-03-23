@@ -4,6 +4,8 @@
 <link rel="stylesheet" href="{{ asset('sneat/vendor/libs/apex-charts/apex-charts.css') }}" />
 <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="{{ asset('sneat/vendor/libs/apex-charts/apex-charts.css') }}" />
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 @endpush
@@ -107,6 +109,203 @@
         });
     </script>
 @endpush
+@push('script')
+    <script src="{{ asset('sneat/vendor/libs/apex-charts/apexcharts.js') }}"></script>
+    <script>
+        // Inisialisasi chart dengan data default
+        // Inisialisasi chart dengan data default
+// Inisialisasi chart dengan data default
+let filteredOptions = {
+    chart: {
+        type: 'bar',
+        height: 450,
+        stacked: false
+    },
+    colors: ['#E0115F', '#008000', '#4e73df'], // Warna: [Ayam Mati, Ayam Panen, Populasi]
+    series: [
+        {
+            name: 'Ayam Mati',
+            data: []
+        }, 
+        {
+            name: 'Ayam Panen',
+            data: []
+        },
+        {
+            name: 'Populasi',
+            type: 'line',
+            data: []
+        }
+    ],
+    xaxis: {
+        categories: []
+    },
+    yaxis: [
+        {
+            title: {
+                text: 'Jumlah Ayam (Mati/Panen)'
+            }
+        },
+        {
+            opposite: true,
+            title: {
+                text: 'Populasi Ayam'
+            }
+        }
+    ],
+    title: {
+        text: 'Grafik Ayam Mati dan Panen Berdasarkan Periode',
+        align: 'center'
+    },
+    tooltip: {
+        shared: true,
+        intersect: false
+    }
+};
+
+let filteredChart = new ApexCharts(document.querySelector("#filtered-chart"), filteredOptions);
+filteredChart.render();
+
+// Event listener untuk form filter
+document.getElementById('chartFilterForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...';
+    
+    // Ambil nilai filter dari form
+    let id_ayam = document.getElementById('id_ayam').value;
+    let id_kandang = document.getElementById('id_kandang').value;
+    
+    // Tampilkan pesan loading di console untuk debug
+    console.log('Memuat data untuk ayam_id:', id_ayam, 'kandang_id:', id_kandang);
+    
+    // Panggil endpoint untuk mengambil data chart dengan parameter filter
+    fetch(`{{ route('dashboard.chart-data') }}?id_ayam=${id_ayam}&id_kandang=${id_kandang}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok: ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Data diterima:', data);
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal memuat data');
+            }
+            
+            if (data.labels.length === 0) {
+                // Tampilkan pesan jika tidak ada data
+                document.getElementById('chart-info').innerHTML = `
+                    <div class="alert alert-warning mt-3">
+                        Tidak ada data untuk filter yang dipilih.
+                    </div>
+                `;
+                
+                // Update chart kosong
+                filteredChart.updateOptions({
+                    xaxis: {
+                        categories: ['Tidak ada data']
+                    }
+                });
+                
+                filteredChart.updateSeries([
+                    {
+                        name: 'Ayam Mati',
+                        data: [0]
+                    }, 
+                    {
+                        name: 'Ayam Panen',
+                        data: [0]
+                    },
+                    {
+                        name: 'Populasi',
+                        data: [0]
+                    }
+                ]);
+            } else {
+                // Update chart dengan data
+                filteredChart.updateOptions({
+                    xaxis: {
+                        categories: data.labels
+                    }
+                });
+                
+                filteredChart.updateSeries([
+                    {
+                        name: 'Ayam Mati',
+                        data: data.qty_mati_series
+                    }, 
+                    {
+                        name: 'Ayam Panen',
+                        data: data.qty_panen_series
+                    },
+                    {
+                        name: 'Populasi',
+                        type: 'line',
+                        data: data.populasi_series
+                    }
+                ]);
+                
+                // Tampilkan informasi total
+                document.getElementById('chart-info').innerHTML = `
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5>Total Ayam Mati</h5>
+                                    <h3 class="text-danger">${data.total_mati}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h5>Total Ayam Panen</h5>
+                                    <h3 class="text-success">${data.total_panen}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Tambahkan info periode ke judul
+            const periodeText = id_ayam ? 
+                document.getElementById('id_ayam').options[document.getElementById('id_ayam').selectedIndex].text :
+                'Semua Periode';
+                
+            // Update judul chart
+            filteredChart.updateOptions({
+                title: {
+                    text: `Grafik Ayam Mati dan Panen - ${periodeText}`
+                }
+            });
+            
+            // Aktifkan kembali tombol submit
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Filter';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            // Tampilkan pesan error
+            document.getElementById('chart-info').innerHTML = `
+                <div class="alert alert-danger mt-3">
+                    Terjadi kesalahan saat memuat data: ${error.message}
+                </div>
+            `;
+            
+            // Aktifkan kembali tombol submit
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Filter';
+        });
+});
+    </script>
+@endpush
+
 <style>
      .dt-buttons {
         display: none !important;
@@ -262,274 +461,49 @@
             
         </div>
     </div>
-    {{-- <div class="row">
-        <!-- Kolom Tabel Stok Menipis -->
-        <div class="col-md-7 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">{{ __('Stok Menipis') }}</h5>
-                    <table class="table">
-                        <thead style="background-color: #4e73df">
-                            <tr>
-                                <th style="color: white">{{ __('Kode Barang') }}</th>
-                                <th style="color: white">{{ __('Nama Barang') }}</th>
-                                <th style="color: white">{{ __('Total Stok') }}</th>
-                                <th style="color: white">{{ __('Status') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if($lowStockItems->isNotEmpty())
-                                @foreach($lowStockItems as $item)
-                                    <tr>
-                                        <td>{{ $item->kode_barang }}</td>
-                                        <td>{{ $item->deskripsi }}</td>
-                                        <td style="font-size: 14px">
-                                            @if (floor($item->total_stok) == $item->total_stok)
-                                                {{ intval($item->total_stok) }} <!-- Tampilkan sebagai integer jika tidak ada desimal -->
-                                            @else
-                                                {{ number_format($item->total_stok, 1, ',', '.') }} <!-- Tampilkan dengan satu desimal -->
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-danger">{{ __('Low') }}</span>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            @else
-                                <tr>
-                                    <td colspan="4" class="text-center">{{ __('Tidak ada barang dengan stok rendah') }}</td>
-                                </tr>
-                            @endif
-                        </tbody>
-                    </table>
+    <div class="container">
+        <h2>Dashboard Transaksi Ayam</h2>
     
-                    <!-- Navigasi Paginasi -->
-                    <div class="d-flex justify-content-center mt-3">
-                        {{ $lowStockItems->links() }}
-                    </div>
+        <!-- Form Filter -->
+        <form id="chartFilterForm" class="mb-4">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="id_ayam">Periode</label>
+                    <select name="id_ayam" id="id_ayam" class="form-control">
+                        <option value="">{{ __('Pilih Periode') }}</option>
+                        @foreach($ayams as $ayam)
+                            <option value="{{ $ayam->id_ayam }}" {{ request('id_ayam') == $ayam->id_ayam ? 'selected' : '' }}>
+                                {{ $ayam->periode }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="kandang">Kandang:</label>
+                    <select id="id_kandang" name="id_kandang" class="form-control">
+                        <option value="">Semua Kandang</option>
+                        @foreach($kandangs as $kandang)
+                            <option value="{{ $kandang->id_kandang }}"{{ request('id_kandang') == $kandang->id_kandang ? 'selected' : '' }}>
+                                {{ $kandang->nama_kandang }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3 align-self-end">
+                    <button type="submit" class="btn btn-primary">Filter</button>
                 </div>
             </div>
-        </div>
+        </form>
     
-        <!-- Kolom Chart Top Selling Items -->
-        <div class="col-md-5 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <canvas id="topSellingItemsChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div> --}}
-    
-
-
-    {{-- barnag perjenis --}}
-
-    {{-- <div class="row">
-        <div class="col-md-5 mb-4">
-            <div class="card p-3">
-                <div class="card-body">
-                    <h5 class="card-title">{{ __('Barang Per Jenis') }}</h5>
-                    <canvas id="barangPerJenisChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-7 mb-4">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">{{ __('Barang Per Jenis') }}</h5>
-                    <div class="dropdown">
-                        <button class="btn btn-link" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bx bx-dots-vertical-rounded"></i>
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="exportDropdown">
-                            <li>
-                                <a class="dropdown-item" href="#" id="printTable">
-                                    <i class="bx bx-printer me-2"></i> Cetak
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item" href="#" id="exportExcel">
-                                    <i class="bx bx-file me-2"></i> Export Excel
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <table id="dataTable" class="table table-striped">
-                        <thead style="background-color:#4e73df">
-                            <tr>
-                                <th style="color: white">{{ __('Nama Jenis') }}</th>
-                                <th style="color: white">{{ __('Total Qty ') }}</th>
-                                <th style="color: white">{{ __('Total Saldo') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @if(!empty($barangPerJenis))
-                                @foreach($barangPerJenis as $id_jenis => $item)
-                                    <tr>
-                                        <td>{{ $item['nama_jenis'] ?? '-' }}</td>
-                                        <td>{{ $item['total_qty'] ?? 0 }}</td>
-                                        <td>{{ number_format($item['total_uang'] ?? 0, 2, ',', '.') }}</td>
-                                    </tr>
-                                @endforeach
-                                <tr style="font-weight: bold;">
-                                    <td></td>
-                                    <td>{{ $grandTotalQty }}</td>
-                                    <td>{{ number_format($grandTotalUang, 2, ',', '.') }}</td>
-                                </tr>
-                            @else
-                                <tr>
-                                    <td colspan="4" class="text-center">{{ __('Tidak ada data barang per jenis') }}</td>
-                                </tr>
-                            @endif
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <!-- Container untuk chart -->
+        <div id="filtered-chart"></div>
+        
+        <!-- Container untuk informasi tambahan -->
+        <div id="chart-info"></div>
     </div>
-    @endsection --}}
-    {{-- @push('script') --}}
-        {{-- <script src="{{ asset('sneat/vendor/libs/apex-charts/apexcharts.js') }}"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> --}}
-        {{-- <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                
-                // Inisialisasi Grafik Top Selling Items
-                const ctx2 = document.getElementById('topSellingItemsChart').getContext('2d');
-                const originalData = [
-                    @foreach($topSellingItems as $item)
-                        {{ $item->total_terjual }},
-                    @endforeach
-                ];
+    
+   
 
-                new Chart(ctx2, {
-                    type: 'polarArea',
-                    
-                    data: {
-                        labels: [
-                            @foreach($topSellingItems as $item)
-                                "{{ $item->deskripsi }}",
-                            @endforeach
-                        ],
-                        datasets: [{
-                            label: '{{ __("Top Selling Items") }}',
-                            data: originalData,
-                            backgroundColor: [
-                                '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'
-                            ],
-                            borderColor: '#fff',
-                            borderWidth: 1,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        animation: {
-                            duration: 5000,
-                            easing: 'easeOutBounce',
-                        },
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            title: {
-                                display: true,
-                                text: '{{ __("Barang Terlaris Bulan Lalu") }}'
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tooltipItem) {
-                                        return tooltipItem.label + ': ' + tooltipItem.raw;
-                                    }
-                                }
-                            }
-                        },
-                        layout: {
-                            padding: {
-                                bottom: 10
-                            }
-                        },
-                        scales: {
-                            r: {
-                                ticks: {
-                                    display: false
-                                },
-                                grid: {
-                                    color: '#eee'
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // Inisialisasi Grafik Barang Per Jenis (Lingkaran)
-                const ctx3 = document.getElementById('barangPerJenisChart').getContext('2d');
-                const barangPerJenisData = [
-                    @foreach($barangPerJenis as $item)
-                        {{ $item['total_uang'] ?? 0 }},
-                    @endforeach
-                ];
-
-                new Chart(ctx3, {
-                    type: 'pie', // Ganti 'bar' menjadi 'pie' atau 'doughnut'
-                    data: {
-                        labels: [
-                            @foreach($barangPerJenis as $item)
-                                "{{ $item['nama_jenis'] ?? '-' }}",
-                            @endforeach
-                        ],
-                        datasets: [{
-                            label: '{{ __('Jumlah total per Jenis') }}',
-                            data: barangPerJenisData,
-                            backgroundColor: [
-                            // Warna Utama
-                            '#4e73df',  // Blue
-                            '#1cc88a',  // Green
-                            '#36b9cc',  // Cyan
-                            '#f6c23e',  // Yellow
-                            '#e74a3b',  // Red
-                            '#858796',  // Gray
-                            '#28a745',  // Dark Green
-                            '#17a2b8',  // Teal
-
-                            // Tambahan Warna
-                            '#6a5acd',  // Slate Blue
-                            '#ff6347',  // Tomato
-                            '#3cb371',  // Medium Sea Green
-                            '#1e90ff',  // Dodger Blue
-                            '#ffa500',  // Orange
-                            '#9370db',  // Medium Purple
-                            '#20b2aa',  // Light Sea Green
-                            '#cd5c5c',  // Indian Red
-                            '#8b008b',  // Dark Magenta
-                            '#00ced1'   // Dark Turquoise
-                        ],
-                            borderColor: '#fff',
-                            borderWidth: 1,
-                        }]
-                    },
-                    options: {
-                        animation: {
-                            duration: 1000,
-                            easing: 'linear',
-                        },
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                display: false,
-                            },
-                            title: {
-                                display: true,
-                                text: '{{ __('Barang Per Jenis') }}'
-                            }
-                        }
-                    }
-                });
-            });
-        </script> --}}
-    {{-- @endpush --}}
+   
 @endsection
 

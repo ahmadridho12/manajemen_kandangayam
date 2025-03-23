@@ -40,6 +40,7 @@ use App\Models\Kandang;
 use App\Models\MonitoringPakanDetail;
 use App\Models\Pakan;
 use App\Models\Panen;
+
 // use App\Http\Requests\UpdateUserRequest; // Pastikan ini sesuai dengan nama kelas Anda
 use Illuminate\Http\Request; // Pastikan ini diimpor
 class PageController extends Controller
@@ -50,14 +51,14 @@ class PageController extends Controller
      */
     public function index(Request $request): View
     {
-        
-        // $todayIncomingLetter = Letter::incoming()->today()->count();
-        // $todayOutgoingLetter = Letter::outgoing()->today()->count();
-        // $todayDispositionLetter = Disposition::today()->count();
-        // $todayLetterTransaction = $todayIncomingLetter + $todayOutgoingLetter + $todayDispositionLetter;
-        // Barang Masuk
+        // Mengambil data ayam untuk filter periode
+        $ayams = Ayam::select('id_ayam', 'periode')->get();
+        // Mengambil data kandang
+        $kandangs = Kandang::select('id_kandang', 'nama_kandang')->get();
+
+        // Data dashboard lainnya (contoh perhitungan)
         $todayayammasuk = Ayam::whereDate('tanggal_masuk', Carbon::today())
-        ->sum('qty_ayam');
+            ->sum('qty_ayam');
 
         $yesterdayayammasuk = Ayam::whereDate('tanggal_masuk', Carbon::yesterday())
             ->sum('qty_ayam');
@@ -66,153 +67,50 @@ class PageController extends Controller
             ? (($todayayammasuk - $yesterdayayammasuk) / $yesterdayayammasuk) * 100 
             : 0;
 
-        // Menghitung total jumlah barang keluar hari ini
         $todayayammati = AyamMati::whereDate('tanggal_mati', Carbon::today())
-        ->sum('quantity_mati');
+            ->sum('quantity_mati');
 
-        // Menghitung total jumlah barang keluar kemarin
         $yesterdayayammati = AyamMati::whereDate('tanggal_mati', Carbon::yesterday())
-        ->sum('quantity_mati');
+            ->sum('quantity_mati');
 
-        // Menghitung persentase perubahan
         $percentageChangekeluar = $yesterdayayammati > 0 
-        ? (($todayayammati - $yesterdayayammati) / $yesterdayayammati) * 100 
-        : 0;
+            ? (($todayayammati - $yesterdayayammati) / $yesterdayayammati) * 100 
+            : 0;
 
-// // Cek query SQL asli
-// $query = DetailBarangKeluar::whereDate('created_at', Carbon::today())->toSql();
-// Log::info('Query: ' . $query);
-
-// // Tambahkan dd() untuk melihat detail lengkap
-// dd([
-//     'records' => $todayDetailBarangKeluarRecords,
-//     'count' => $todayDetailBarangKeluar,
-//     'today' => Carbon::today(),
-//     'timezone' => date_default_timezone_get()
-// ]);
-
-        $todayayammati = AyamMati::today()->count();
-        $yesterdayayammati = AyamMati::yesterday()->count();
-
-
+        $todayayammatiCount = AyamMati::today()->count();
+        $yesterdayayammatiCount = AyamMati::yesterday()->count();
         $todaypanen = Panen::today()->count();
         $yesterdaypanen = Panen::yesterday()->count();
+        $todayayammasukCount = Ayam::today()->count();
+        $yesterdayayammasukCount = Ayam::yesterday()->count();
 
-        $todayayammati = AyamMati::today()->count();
-        $yesterdayayammati = AyamMati::yesterday()->count();
-        $todayTotalJumlahayammati = AyamMati::whereDate('tanggal_mati', Carbon::today())->sum('quantity_mati');
-
-
-        $todayayammasuk = Ayam::today()->count();
-        $yesterdayayammasuk = Ayam::yesterday()->count();
-        $todayTotalJumlahayammasuk = Ayam::whereDate('tanggal_masuk', Carbon::today())->sum('qty_ayam');
-
-
-
-
-        // $yesterdayIncomingLetter = Letter::incoming()->yesterday()->count();
-        // $yesterdayOutgoingLetter = Letter::outgoing()->yesterday()->count();
-        // $yesterdayDispositionLetter = Disposition::yesterday()->count();
-        // $yesterdayLetterTransaction = $yesterdayIncomingLetter + $yesterdayOutgoingLetter + $yesterdayDispositionLetter;
-
-    //     $lowStockItems = DB::table('barangg as b')
-    //     ->select('b.id_barang', 'b.kode_barang', 'b.deskripsi', DB::raw('SUM(ds.qty_stok) as total_stok'))
-    //     ->leftJoin('detail_stok as ds', 'b.id_barang', '=', 'ds.barang_id')
-    //     ->groupBy('b.id_barang', 'b.kode_barang', 'b.deskripsi') // Pastikan semua kolom yang dipilih ada di sini
-    //     ->having('total_stok', '<', 10)
-    //     ->paginate(10); //
-
-    //     $topSellingItems = DB::table('detail_barang_keluar as dbk')
-    //     ->select('b.kode_barang', 'b.deskripsi', DB::raw('SUM(dbk.jumlah) as total_terjual'))
-    //     ->join('barangg as b', 'dbk.id_barang', '=', 'b.id_barang')
-    //     ->whereMonth('dbk.created_at', '=', now()->subMonth()->month) // Ambil data bulan lalu
-    //     ->groupBy('b.kode_barang', 'b.deskripsi')
-    //     ->orderBy('total_terjual', 'desc')
-    //     ->limit(5) // Ambil 5 barang terlaris
-    //     ->get();
-
-
-    //   // Mengambil qty stok per jenis
-    //     $qtyStokPerJenis = DB::table('detail_stok as ds')
-    //     ->join('barangg as b', 'ds.barang_id', '=', 'b.id_barang')
-    //     ->join('jenis as j', 'b.id_jenis', '=', 'j.id') // Menghubungkan ke tabel jenis
-    //     ->select('b.id_jenis', 'j.nama as nama_jenis', DB::raw('SUM(ds.qty_stok) as total_qty'))
-    //     ->groupBy('b.id_jenis', 'j.nama')
-    //     ->get();
-
-    //     // Debugging untuk qtyStokPerJenis
-    //     // dd($qtyStokPerJenis); // Periksa hasil qtyStokPerJenis
-
-    //     // Mengambil total kolom total per id_jenis
-    //     $totalPerJenis = DB::table('detail_stok as ds')
-    //     ->join('barangg as b', 'ds.barang_id', '=', 'b.id_barang')
-    //     ->join('jenis as j', 'b.id_jenis', '=', 'j.id') // Menghubungkan ke tabel jenis
-    //     ->select('b.id_jenis', 'j.nama as nama_jenis', DB::raw('SUM(ds.total) as total_uang'))
-    //     ->groupBy('b.id_jenis', 'j.nama') // Hanya mengelompokkan berdasarkan id_jenis dan nama_jenis
-    //     ->get();
-
-    //     // Debugging untuk totalPerJenis
-    //     // dd($totalPerJenis); // Periksa hasil totalPerJenis
-
-    //     // Menggabungkan hasil
-    //     $combinedResults = [];
-    //     foreach ($qtyStokPerJenis as $qty) {
-    //     $combinedResults[$qty->id_jenis]['nama_jenis'] = $qty->nama_jenis;
-    //     $combinedResults[$qty->id_jenis]['total_qty'] = $qty->total_qty;
-    //     }
-
-    //     foreach ($totalPerJenis as $total) {
-    //     $combinedResults[$total->id_jenis]['total_uang'] = $total->total_uang;
-    //     }
-
-    //     // Menghitung total keseluruhan
-    //     $grandTotalQty = array_sum(array_column($combinedResults, 'total_qty'));
-    //     $grandTotalUang = array_sum(array_column($combinedResults, 'total_uang'));
-
-    //     // Debugging untuk total keseluruhan
-    //     // dd([
-    //     // 'grandTotalQty' => $grandTotalQty,
-    //     // 'grandTotalUang' => $grandTotalUang,
-    //     // 'combinedResults' => $combinedResults,
-    //     // ]);
-
-
-            return view('pages.dashboard', [
+        return view('pages.dashboard', [
             'greeting' => GeneralHelper::greeting(),
             'currentDate' => Carbon::now()->isoFormat('dddd, D MMMM YYYY'),
-            // 'todayIncomingLetter' => $todayIncomingLetter,
-            // 'todayOutgoingLetter' => $todayOutgoingLetter,
-            // 'todayDispositionLetter' => $todayDispositionLetter,
-            // 'todayLetterTransaction' => $todayLetterTransaction,
-            'todayayammati' => $todayayammati,
-            'yesterdayayammati' => $yesterdayayammati,
+            'todayayammati' => $todayayammatiCount,
+            'yesterdayayammati' => $yesterdayayammatiCount,
             'todaypanen' => $todaypanen,
             'yesterdaypanen' => $yesterdaypanen,
-            'todayayammasuk' => $todayayammasuk,
-            'yesterdayayammasuk' => $yesterdayayammasuk,
+            'todayayammasuk' => $todayayammasukCount,
+            'yesterdayayammasuk' => $yesterdayayammasukCount,
             'activeUser' => User::active()->count(),
             'stokpakan' => MonitoringPakanDetail::sum('masuk'),
             'pakan' => Pakan::count(),
             'abk' => Abk::count(),
             'kandang' => Kandang::count(),
-            // 'Satuan' => Satuan::count(),
             'percentageIncomingLetter' => GeneralHelper::calculateChangePercentage($todayayammasuk, $yesterdayayammasuk),
             'percentageOutgoingLetter' => GeneralHelper::calculateChangePercentage($yesterdayayammati, $todayayammati),
             'percentageDispositionLetter' => GeneralHelper::calculateChangePercentage($yesterdaypanen, $todaypanen),
-            // 'percentageLetterTransaction' => GeneralHelper::calculateChangePercentage($yesterdayLetterTransaction, $todayLetterTransaction),
-            // 'lowStockItems' => $lowStockItems, // Tambahkan variabel lowStockItems
-            // 'topSellingItems' => $topSellingItems, // Tambahkan variabel barang terlaris
-            // 'barangPerJenis' => $combinedResults, // Tambahkan variabel barangPerJenis
-            // 'grandTotalQty' => $grandTotalQty, // Total qty
-            // 'grandTotalUang' => $grandTotalUang, // Total uang
-            'todayayammasuk' => $todayayammasuk,
+            'todayayammasuk' => $todayayammasukCount,
             'percentageChange' => round($percentageChange, 2),
-           'todayayammati' => AyamMati::whereDate('tanggal_mati', Carbon::today())->sum('quantity_mati'),
-
+            'todayayammati' => $todayayammati,
             'percentageChangekeluar' => round($percentageChangekeluar, 2),
-
+            // Kirim data filter ke view
+            'ayams' => Ayam::orderBy('id_ayam', 'desc')->get(), // Urutkan ayam berdasarkan yang terbaru
+            'kandangs' => $kandangs,
         ]);
     }
+    
 
     /**
      * @param Request $request
@@ -308,4 +206,95 @@ class PageController extends Controller
             return back()->with('error', $exception->getMessage());
         }
     }
+    public function getChartData(Request $request)
+    {
+        try {
+            // Ambil parameter filter
+            $id_ayam = $request->input('id_ayam');
+            $id_kandang = $request->input('id_kandang');
+            
+            // Log untuk debugging
+            Log::info('Chart Data Request', [
+                'id_ayam' => $id_ayam,
+                'id_kandang' => $id_kandang
+            ]);
+            
+            // Query untuk data dari tabel populasi
+            $query = DB::table('populasi')
+                ->join('ayam', 'populasi.populasi', '=', 'ayam.id_ayam');
+                
+            if ($id_ayam) {
+                $query->where('ayam.id_ayam', $id_ayam);
+            }
+            
+            if ($id_kandang) {
+                $query->where('ayam.kandang_id', $id_kandang);
+            }
+            
+            // Ambil data berdasarkan hari (day)
+            $data = $query->select(
+                    'populasi.day', 
+                    'populasi.tanggal',
+                    'populasi.qty_mati',
+                    'populasi.qty_panen',
+                    'populasi.total as total_populasi' 
+                    )
+                ->orderBy('populasi.day', 'asc')
+                ->get();
+            
+            // Jika tidak ada data
+            if ($data->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada data untuk filter yang dipilih',
+                    'labels' => [],
+                    'qty_mati_series' => [],
+                    'qty_panen_series' => [],
+                    'populasi_series' => [],
+                    'total_mati' => 0,
+                    'total_panen' => 0
+                ]);
+            }
+            
+            // Siapkan data untuk chart
+            $labels = [];
+            $qtyMatiSeries = [];
+            $qtyPanenSeries = [];
+            $populasiSeries = [];
+            $totalMati = 0;
+            $totalPanen = 0;
+            
+            foreach ($data as $item) {
+                $labels[] = 'Hari ' . $item->day . ' (' . Carbon::parse($item->tanggal)->format('d/m') . ')';
+                $qtyMatiSeries[] = (int)$item->qty_mati;
+                $qtyPanenSeries[] = (int)$item->qty_panen;
+                $populasiSeries[] = (int)$item->total_populasi; // gunakan alias
+                
+                $totalMati += (int)$item->qty_mati;
+                $totalPanen += (int)$item->qty_panen;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'labels' => $labels,
+                'qty_mati_series' => $qtyMatiSeries,
+                'qty_panen_series' => $qtyPanenSeries,
+                'populasi_series' => $populasiSeries,
+                'total_mati' => $totalMati,
+                'total_panen' => $totalPanen
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Chart Data Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

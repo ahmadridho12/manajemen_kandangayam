@@ -8,6 +8,9 @@ use App\Models\PakanTransfer;
 
 use App\Services\MonitoringPakanGeneratorService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class MonitoringPakanController extends Controller
 {
@@ -101,42 +104,41 @@ class MonitoringPakanController extends Controller
         $search = $request->input('search'); // Jika ada pencarian
         $id_ayam = $request->input('id_ayam'); // Input dari dropdown filter
         $id_kandang = $request->input('id_kandang'); // Filter kandang
-
-
+    
         $query = MonitoringPakan::query();
-
+    
         $query->join('ayam', 'monitoring_pakan.ayam_id', '=', 'ayam.id_ayam') // Join ke tabel ayam
-      ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang'); // Join ke tabel kandang
-
-
+              ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang'); // Join ke tabel kandang
+    
         if ($search) {
             $query->where('day', 'like', '%' . $search . '%');
             // Ganti 'nama_kategori' dengan nama kolom yang sesuai di tabel Anda
         }
         
-          // Add ayam filter if selected
-          if ($id_ayam) {
+        // Filter berdasarkan periode ayam jika dipilih
+        if ($id_ayam) {
             $query->where('ayam_id', $id_ayam);
         }
-
-         // Filter kandang
+    
+        // Filter berdasarkan kandang jika dipilih
         if ($id_kandang) {
             $query->where('ayam.kandang_id', $id_kandang);
         }
+        
         $query->orderBy('monitoring_pakan.ayam_id', 'desc')
-        ->orderBy('monitoring_pakan.day', 'asc');
-  
-  $data = $query->paginate(50);
-  
-  return view('pages.pakan.monitoringpakan.index', [
-      'data' => $data,
-      'search' => $search,
-      'ayams' => Ayam::all(),
-      'id_ayam' => $id_ayam,
-      'kandangs' => \App\Models\Kandang::all(),
-  ]);
+              ->orderBy('monitoring_pakan.day', 'asc');
+      
+        $data = $query->paginate(50);
+      
+        return view('pages.pakan.monitoringpakan.index', [
+            'data' => $data,
+            'search' => $search,
+            'ayams' => Ayam::orderBy('id_ayam', 'desc')->get(), // Urutkan ayam berdasarkan yang terbaru
+            'id_ayam' => $id_ayam,
+            'kandangs' => \App\Models\Kandang::all(),
+        ]);
     }
-
+    
     public function show($id)
     {
         $monitoring = MonitoringPakan::with(['ayam', 'details', 'transfersFrom', 'transfersTo'])
@@ -202,4 +204,111 @@ class MonitoringPakanController extends Controller
             'kandang' => $request->id_kandang ? Kandang::find($request->id_kandang)->nama_kandang : 'Semua Kandang'
         ]);
     }
+    public function getChartData(Request $request)
+    {
+        try {
+            // Ambil parameter filter
+            $id_ayam = $request->input('id_ayam');
+            $id_kandang = $request->input('id_kandang');
+            
+            // Log untuk debugging
+            Log::info('Chart Data Request', [
+                'id_ayam' => $id_ayam,
+                'id_kandang' => $id_kandang
+            ]);
+            
+            // Query untuk data dari tabel monitoring_pakan dengan join ke tabel ayam
+            $query = DB::table('monitoring_pakan')
+                ->join('ayam', 'monitoring_pakan.ayam_id', '=', 'ayam.id_ayam');
+                
+            if ($id_ayam) {
+                $query->where('ayam.id_ayam', $id_ayam);
+            }
+            
+            if ($id_kandang) {
+                $query->where('ayam.kandang_id', $id_kandang);
+            }
+            
+            // Ambil data berdasarkan hari (day)
+            $data = $query->select(
+                    'monitoring_pakan.day',
+                    'monitoring_pakan.tanggal',
+                    DB::raw('COALESCE(monitoring_pakan.keluar, 0) as keluar'),
+                    DB::raw('COALESCE(monitoring_pakan.total_masuk, 0) as total_masuk'),
+                    DB::raw('COALESCE(monitoring_pakan.sisa, 0) as sisa')
+                )
+                ->orderBy('monitoring_pakan.day', 'asc')
+                ->get();
+            
+            // Log data yang ditemukan untuk debugging
+            Log::info('Chart Data Found', [
+                'count' => $data->count(),
+                'data' => $data
+            ]);
+                
+            // Jika tidak ada data
+            if ($data->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada data untuk filter yang dipilih',
+                    'labels' => [],
+                    'qty_keluar_series' => [],
+                    'qty_masuk_series' => [],
+                    'pakan_series' => [],
+                    'total_keluar' => 0,
+                    'total_masuk' => 0
+                ]);
+            }
+            
+            // Siapkan data untuk chart
+            $labels = [];
+            $qtyKeluarSeries = [];
+            $qtyMasukSeries = [];
+            $pakanSeries = [];
+            $totalKeluar = 0;
+            $totalMasuk = 0;
+            
+            foreach ($data as $item) {
+                // Pastikan tanggal valid
+                $tanggalFormatted = 'N/A';
+                if (!empty($item->tanggal)) {
+                    try {
+                        $tanggalFormatted = Carbon::parse($item->tanggal)->format('d/m');
+                    } catch (\Exception $e) {
+                        Log::warning('Invalid date format', ['tanggal' => $item->tanggal]);
+                    }
+                }
+                
+                $labels[] = 'Hari ' . $item->day . ' (' . $tanggalFormatted . ')';
+                $qtyKeluarSeries[] = (int)$item->keluar;
+                $qtyMasukSeries[] = (int)$item->total_masuk;
+                $pakanSeries[] = (int)$item->sisa;
+                
+                $totalKeluar += (int)$item->keluar;
+                $totalMasuk += (int)$item->total_masuk;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'labels' => $labels,
+                'qty_keluar_series' => $qtyKeluarSeries,
+                'qty_masuk_series' => $qtyMasukSeries,
+                'pakan_series' => $pakanSeries,
+                'total_keluar' => $totalKeluar,
+                'total_masuk' => $totalMasuk
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Chart Data Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    
 }
