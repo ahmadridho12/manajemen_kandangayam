@@ -309,6 +309,8 @@ function number_format(number, decimals = 0) {
     @if(isset($ringkasan))
         <div class="mt-4">
             <h5>Hasil Perhitungan IP</h5>
+            <a href="{{ route('performa.ip.print', ['id_ayam' => request('id_ayam'), 'id_kandang' => request('id_kandang')]) }}" target="_blank" class="btn btn-success">{{ __('Print') }}</a>
+
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <tr>

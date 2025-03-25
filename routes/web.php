@@ -95,6 +95,7 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::resource('/monitoring', \App\Http\Controllers\MonitoringAyamController::class);
         Route::get('/monitoring/create', [MonitoringAyamController::class, 'create'])->name('monitoring.create');
         Route::post('/monitoring/store', [MonitoringAyamController::class, 'store'])->name('monitoring.store');
+        Route::get('/inventory/monitoring/print', [\App\Http\Controllers\MonitoringAyamController::class, 'print'])->name('monitoring.print');
 
 
     });
@@ -135,6 +136,12 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
     Route::prefix('performa')->as('performa.')->group(function () {
         Route::resource('/ip', \App\Http\Controllers\PerformaController::class);
         Route::post('/ip/hitung-ip/{kandangId}', [PerformaController::class, 'hitungIP'])->name('ip.hitungIP');
+        Route::get('/ip/print', [PerformaController::class, 'print'])
+        ->name('ip.print');
+   
+   Route::get('/performa/ip/{id}', [PerformaController::class, 'show'])
+        ->name('performa.ip.show');
+
     });
 
     // Rute transaksi barang

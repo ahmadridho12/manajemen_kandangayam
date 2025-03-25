@@ -154,4 +154,93 @@ public function hitungIP(Request $request, $kandangId)
         ], 400);
     }
 }
+// Tambahkan metode show yang mengarah ke metode print
+public function show(Request $request)
+{
+    return $this->print($request);
+}
+
+public function print(Request $request) 
+{
+    // Ambil parameter filter
+    $idAyam = $request->input('id_ayam');
+    $idKandang = $request->input('id_kandang');
+
+    // Query data dengan filter
+    $query = Ayam::with(['kandang', 'doc'])
+        ->when($idAyam, function ($q) use ($idAyam) {
+            return $q->where('id_ayam', $idAyam);
+        })
+        ->when($idKandang, function ($q) use ($idKandang) {
+            return $q->where('kandang_id', $idKandang);
+        });
+
+    $ayam = $query->first();
+
+    if (!$ayam) {
+        return redirect()->back()->with('error', 'Data tidak ditemukan');
+    }
+
+    // Gunakan IndexPerformanceService untuk mengambil data
+    $dataPanen = $this->indexPerformanceService->getDataPanen($ayam->id_ayam);
+    $populasi = $this->indexPerformanceService->getPopulasiData($ayam->id_ayam);
+    $populasiData = $populasi['status'] ? $populasi['data'] : [];
+    $estimasiPembelian = $this->indexPerformanceService->getEstimasiPembelian($ayam->id_ayam);
+
+    // Struktur ringkasan sesuai dengan yang ada di index method
+    $ringkasan = $dataPanen['success'] ? [
+        'komponen' => [
+            'daya_hidup'   => $dataPanen['data']['ringkasan']['daya_hidup'],
+            'bobot_badan'  => $dataPanen['data']['ringkasan']['bobot_panen_rata_rata'],
+            'umur'         => $dataPanen['data']['ringkasan']['umur_rata_rata'],
+            'fcr'          => $dataPanen['data']['ringkasan']['fcr']
+        ],
+        'data' => $dataPanen['data']
+    ] : null;
+
+    // Hitung penjualan sama seperti di index method
+    $totalBB        = $dataPanen['data']['total']['total_bb']        ?? 0;
+    $avgHarga       = $dataPanen['data']['total']['average_harga']   ?? 0;
+    $totalPanen     = $dataPanen['data']['total']['total_panen']     ?? 0;
+    $totalPembelian = $estimasiPembelian['total_pembelian']          ?? 0;
+
+    $bonusFcr       = $totalBB * 250;
+    $bonusKematian  = $totalBB * 100;
+    $totalPenjualan = $totalBB * $avgHarga;
+    $labaBersih     = $totalPenjualan + $bonusFcr + $bonusKematian - $totalPembelian;
+
+    $penjualan = [
+        'penjualan_daging' => [
+            'qty'          => $totalBB,
+            'harga_satuan' => $avgHarga,
+            'jumlah'       => $totalPanen
+        ],
+        'total_penjualan'  => $totalPenjualan,
+        'bonus_fcr'        => $bonusFcr,
+        'bonus_kematian'   => $bonusKematian,
+        'laba'             => $labaBersih
+    ];
+
+    $populasiData = [
+        'populasi_awal'    => $populasiData['populasi_awal'] ?? 0,
+        'ayam_mati'        => $populasiData['ayam_mati'] ?? 0,
+        'persentase_mati'  => $populasiData['persentase_mati'] ?? 0,
+        'ayam_sisa'        => $populasiData['ayam_sisa'] ?? 0,
+        'ayam_panen'       => $populasiData['ayam_panen'] ?? 0
+    ];
+    
+    $data = Ayam::where('id_ayam', $idAyam)->get();
+
+    // Tampilkan view cetak
+    return view('pages.performa.ip.print', compact(
+        'ayam',
+        'data',
+        'ringkasan', 
+        'populasiData', 
+        'dataPanen', 
+        'estimasiPembelian', 
+        'penjualan'
+    ));
+}
+
 }

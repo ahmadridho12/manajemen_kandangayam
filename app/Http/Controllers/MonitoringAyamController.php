@@ -119,4 +119,29 @@ class MonitoringAyamController extends Controller
                 ->with('error', $e->getMessage());
         }
     }
+    public function print(Request $request) 
+{
+    $query = MonitoringAyam::query();
+    
+    // Gunakan join yang sama seperti di method index
+    $query->join('ayam', 'monitoring_ayam.ayam_id', '=', 'ayam.id_ayam')
+          ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang');
+    
+    // Sesuaikan where clause dengan nama kolom yang benar
+    if ($request->id_ayam) {
+        $query->where('ayam_id', $request->id_ayam);
+    }
+    
+    if ($request->id_kandang) {
+        $query->where('ayam.kandang_id', $request->id_kandang);
+    }
+    
+    $data = $query->get();
+    
+    return view('pages.inventory.monitoring.print', [
+        'data' => $data,
+        'periode' => $request->id_ayam ? Ayam::find($request->id_ayam)->periode : 'Semua Periode',
+        'kandang' => $request->id_kandang ? Kandang::find($request->id_kandang)->nama_kandang : 'Semua Kandang'
+    ]);
+}   
 }

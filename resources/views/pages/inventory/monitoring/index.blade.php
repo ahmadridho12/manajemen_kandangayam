@@ -56,6 +56,8 @@
         <div class="col-md-4 align-self-end">
             <button type="submit" class="btn btn-primary">{{ __('Filter') }}</button>
             <a href="{{ route('inventory.monitoring.index') }}" class="btn btn-secondary">{{ __('Reset') }}</a>
+            <a href="{{ route('inventory.monitoring.print', ['id_ayam' => request('id_ayam'), 'id_kandang' => request('id_kandang')]) }}" target="_blank" class="btn btn-success">{{ __('Print') }}</a>
+
         </div>
     </form>
 </div>
