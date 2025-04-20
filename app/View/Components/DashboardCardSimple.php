@@ -12,13 +12,14 @@ class DashboardCardSimple extends Component
     public mixed $value; // Diubah dari int ke mixed
     public float $percentage;
     public bool $daily;
+    public ?string $route; // Menambahkan properti route
 
     /**
      * Create a new component instance.
      *
      * @return void
      */
-    public function __construct($label, $value, $daily, $color, $icon, $percentage)
+    public function __construct($label, $value, $daily, $color, $icon, $percentage, $route = null)
     {
         $this->label = $label;
         $this->value = $value;
@@ -26,6 +27,7 @@ class DashboardCardSimple extends Component
         $this->color = $color;
         $this->icon = $icon;
         $this->percentage = $percentage ?? 0.00;
+        $this->route = $route; // Menambahkan properti route
     }
 
     /**
@@ -37,4 +39,5 @@ class DashboardCardSimple extends Component
     {
         return view('components.dashboard-card-simple');
     }
+
 }

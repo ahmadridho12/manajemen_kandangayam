@@ -39,6 +39,7 @@ use Illuminate\Http\Request;
 Route::middleware(['auth', 'session.timeout'])->group(function () {
     Route::get('/', [\App\Http\Controllers\PageController::class, 'index'])->name('home');
     Route::get('/dashboard/chart-data', [\App\Http\Controllers\PageController::class, 'getChartData'])->name('dashboard.chart-data');
+    
     Route::get('/inventory/populasi/chart-data', [\App\Http\Controllers\PopulasiController::class, 'getChartData'])
     ->name('populasi.chart-data');
     Route::get('/pakan/monitoring/chart-data', [\App\Http\Controllers\MonitoringPakanController::class, 'getChartData'])

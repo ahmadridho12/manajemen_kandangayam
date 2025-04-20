@@ -71,6 +71,8 @@ $(document).ready(function() {
             $('#persentaseMati').text(number_format(populasiData.persentase_mati, 2) + ' %');
             $('#ayamSisa').text(number_format(populasiData.ayam_sisa) + ' Ekor');
             $('#ayamPanen').text(number_format(populasiData.ayam_panen) + ' Ekor');
+            $('#persentasePanen').text(number_format(populasiData.persentase_panen, 2) + ' %');
+
         } else {
             console.warn('Populasi data tidak tersedia atau status false.');
         }
@@ -373,6 +375,7 @@ function number_format(number, decimals = 0) {
                
                 <div class="col-md-3">
                     <div class="card bg-warning text-dark">
+                        
                         <div class="card-body">
                             <h6 style="color: white" class="card-title">Ayam Sisa</h6>
                             <h3 style="color: white" class="card-text" id="ayamSisa">0 Ekor</h3>
@@ -381,8 +384,15 @@ function number_format(number, decimals = 0) {
                 </div>
                 <div class="col-md-3">
                     <div class="card bg-success text-white">
-                        <div class="card-body">
+                        {{-- <div class="card-body">
                             <h6 style="color: white" class="card-title">Ayam Terpanen</h6>
+                            <h3 style="color: white" class="card-text" id="ayamPanen">0 Ekor</h3>
+                        </div> --}}
+                        <div class="card-body">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <h6 style="color: white" class="card-title">Ayam Terpanen</h6>
+                                <h5 style="color: white; font-size: 14px;" class="card-text" id="persentasePanen">(0%)</h5>
+                            </div>
                             <h3 style="color: white" class="card-text" id="ayamPanen">0 Ekor</h3>
                         </div>
                     </div>

@@ -225,6 +225,7 @@ class IndexPerformanceService
 
             $totalAyam = $ayam->qty_ayam;
             $persentaseMati = $totalAyam > 0 ? ($ayamMati / $totalAyam) * 100 : 0;    
+            $persentasePanen = $totalAyam > 0 ? ($ayamPanen / $totalAyam) * 100 : 0;
             return [
                 'status' => true,
                 'data' => [
@@ -232,7 +233,8 @@ class IndexPerformanceService
                     'ayam_mati' => $ayamMati,
                     'ayam_sisa' => $ayamSisa,
                     'ayam_panen' => $ayamPanen,
-                    'persentase_mati' => $persentaseMati
+                    'persentase_mati' => $persentaseMati,
+                    'persentase_panen' => $persentasePanen
                 ],
                 'message' => 'Data populasi kandang berhasil diambil',
             ];
