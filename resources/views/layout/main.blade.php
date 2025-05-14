@@ -21,7 +21,7 @@
     <meta name="description" content=""/>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{{ asset('logo-black.png') }}"/>
+    <link rel="icon" type="image/x-icon" href="{{ asset('ncnih.svg') }}"/>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com"/>

@@ -15,34 +15,109 @@ use Illuminate\Support\Facades\Log;
 
 class MonitoringPakanGeneratorService
 {
-    public function generateFromAyam($id_ayam)
+    public function generateFromAyam(int $id_ayam)
     {
         $ayam = Ayam::findOrFail($id_ayam);
-        MonitoringPakan::where('ayam_id', $id_ayam)->delete();
-        
-        $tanggal_masuk = Carbon::parse($ayam->tanggal_masuk);
-        $tanggal_selesai = Carbon::parse($ayam->tanggal_selesai);
-        $tanggal_mulai = $tanggal_masuk->copy()->subDays(10);
-        
-        $current_date = $tanggal_mulai->copy();
-        $day = -10;
-        
-        while ($current_date <= $tanggal_selesai) {
-            MonitoringPakan::create([
+        $startDate = Carbon::parse($ayam->tanggal_masuk)->subDays(10);
+        $endDate   = Carbon::parse($ayam->tanggal_selesai);
+        $currentDate = $startDate->copy();
+
+        while ($currentDate->lte($endDate)) {
+            // Calculate day offset
+            $day = $startDate->diffInDays($currentDate) - 10;
+
+            $attributes = [
                 'ayam_id' => $id_ayam,
-                'tanggal' => $current_date->format('Y-m-d'),
-                'day' => $day,
-                'total_masuk' => 0,
-                'total_berat' => 0,
-                'keluar' => 0,
-                'sisa' => 0
-            ]);
-            
-            $current_date->addDay();
-            $day++;
+                'tanggal' => $currentDate->toDateString(),
+            ];
+            $values = [
+                'day'            => $day,
+                'total_masuk'    => 0,
+                'total_berat'    => 0,
+                'keluar'         => 0,
+                'sisa'           => 0,
+                'transfer_id'    => null,
+                'total_transfer' => 0,
+            ];
+            MonitoringPakan::updateOrCreate($attributes, $values);
+            $currentDate->addDay();
         }
     }
-    
+
+    /**
+     * Delta generate for updates: adds or removes only the needed records
+     */
+    public function generateDeltaFromAyam(
+        int $id_ayam,
+        Carbon $oldStart,
+        Carbon $oldEnd,
+        Carbon $newStart,
+        Carbon $newEnd
+    ) {
+        // Determine new begin including pre-feed
+        $newBegin = $newStart->copy()->subDays(10);
+        $oldBegin = $oldStart->copy()->subDays(10);
+
+        // 1) Remove records beyond new end date
+        MonitoringPakan::where('ayam_id', $id_ayam)
+            ->whereDate('tanggal', '>', $newEnd->toDateString())
+            ->delete();
+
+        // 2) Add missing records before old begin if new begin is earlier
+        if ($newBegin->lt($oldBegin)) {
+            $this->insertRange($id_ayam, $newBegin, $oldBegin->subDay(), $newBegin);
+        }
+
+        // 3) Add missing records after old end if new end is later
+        if ($newEnd->gt($oldEnd)) {
+            $this->insertRange($id_ayam, $oldEnd->addDay(), $newEnd, $newBegin);
+        }
+
+        // 4) Re-index 'day' for all existing records within the new range
+        $this->reindexDays($id_ayam, $newBegin);
+    }
+
+    /**
+     * Insert default records between two dates inclusive
+     */
+    protected function insertRange(int $id_ayam, Carbon $from, Carbon $to, Carbon $baseBegin)
+    {
+        $current = $from->copy();
+        while ($current->lte($to)) {
+            $day = $baseBegin->diffInDays($current) - 10;
+
+            MonitoringPakan::updateOrCreate(
+                ['ayam_id' => $id_ayam, 'tanggal' => $current->toDateString()],
+                [
+                    'day'            => $day,
+                    'total_masuk'    => 0,
+                    'total_berat'    => 0,
+                    'keluar'         => 0,
+                    'sisa'           => 0,
+                    'transfer_id'    => null,
+                    'total_transfer' => 0,
+                ]
+            );
+            $current->addDay();
+        }
+    }
+
+    /**
+     * Recalculate 'day' offset based on a new begin date
+     */
+    protected function reindexDays(int $id_ayam, Carbon $begin)
+    {
+        $records = MonitoringPakan::where('ayam_id', $id_ayam)
+            ->whereDate('tanggal', '>=', $begin->toDateString())
+            ->orderBy('tanggal')
+            ->get();
+
+        foreach ($records as $index => $record) {
+            $record->day = $index - 10;
+            $record->save();
+        }
+    }
+
     public function processPakanMasuk(PakanMasuk $pakanMasuk, $isUpdate = false, $oldMasuk = 0, $oldBeratZak = 0)
     {
         DB::transaction(function() use ($pakanMasuk, $isUpdate, $oldMasuk, $oldBeratZak) {

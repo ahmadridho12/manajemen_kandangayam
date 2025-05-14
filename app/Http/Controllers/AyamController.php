@@ -168,70 +168,72 @@ class AyamController extends Controller
     }
 
     public function update(Request $request, $id_ayam)
-{
-    $request->validate([
-        'periode' => 'required|string|max:255',
-        'tanggal_masuk' => 'required|date',
-        'rentang_hari' => 'required|integer|min:1',
-        'qty_ayam' => 'required|integer|min:0',
-        'kandang_id' => 'required|integer',
-        'doc_id' => 'required|integer',
-        'status' => 'required|string',
-    ]);
-
-    DB::beginTransaction();
-    try {
-        $ayam = Ayam::find($id_ayam);
-        if (!$ayam) {
-            return redirect()->route('sistem.masuk.index')->with('error', 'Ayam tidak ditemukan.');
-        }
-
-        // Hitung Tanggal Selesai
-        $tanggal_selesai = Carbon::parse($request->tanggal_masuk)
-            ->addDays($request->rentang_hari)
-            ->format('Y-m-d');
-
-        // Ambil Harga DOC
-        $harga_doc = HargaDoc::where('id_doc', $request->doc_id)->first()->harga;
-        
-        // Hitung Total Harga
-        $total_harga = $request->qty_ayam * $harga_doc;
-
-        // Update Data Ayam
-        $ayam->update([
-            'periode' => $request->periode,
-            'tanggal_masuk' => $request->tanggal_masuk,
-            'tanggal_selesai' => $tanggal_selesai,
-            'rentang_hari' => $request->rentang_hari,
-            'qty_ayam' => $request->qty_ayam,
-            'doc_id' => $request->doc_id,
-            'total_harga' => $total_harga,
-            'status' => $request->status,
-            'kandang_id' => $request->kandang_id,
+    {
+        $request->validate([
+            'periode'       => 'required|string|max:255',
+            'tanggal_masuk' => 'required|date',
+            'rentang_hari'  => 'required|integer|min:1',
+            'qty_ayam'      => 'required|integer|min:0',
+            'kandang_id'    => 'required|integer',
+            'doc_id'        => 'required|integer',
+            'status'        => 'required|string',
         ]);
 
-        // Regenerate Populasi
-        $populasiService = new PopulasiGeneratorService();
-        $populasiService->generateFromAyam($ayam->id_ayam);
+        DB::beginTransaction();
+        try {
+            // Fetch existing Ayam before update
+            $ayam = Ayam::findOrFail($id_ayam);
+            $oldMasuk  = Carbon::parse($ayam->tanggal_masuk);
+            $oldSelesai = Carbon::parse($ayam->tanggal_selesai);
 
-        // Regenerate Monitoring
-        $monitoringService = new MonitoringGeneratorService();
-        $monitoringService->generateFromAyam($ayam->id_ayam);
+            // Calculate new selesai and harga
+            $newMasuk = Carbon::parse($request->tanggal_masuk);
+            $newSelesai = $newMasuk->copy()->addDays($request->rentang_hari);
+            $harga_doc   = HargaDoc::where('id_doc', $request->doc_id)->firstOrFail()->harga;
+            $total_harga = $request->qty_ayam * $harga_doc;
 
-        // Regenerate Monitoring Pakan
-        $monitoringpakanService = new MonitoringPakanGeneratorService();
-        $monitoringpakanService->generateFromAyam($ayam->id_ayam);
+            // Update Ayam
+            $ayam->update([
+                'periode'         => $request->periode,
+                'tanggal_masuk'   => $newMasuk->toDateString(),
+                'tanggal_selesai' => $newSelesai->toDateString(),
+                'rentang_hari'    => $request->rentang_hari,
+                'qty_ayam'        => $request->qty_ayam,
+                'doc_id'          => $request->doc_id,
+                'total_harga'     => $total_harga,
+                'status'          => $request->status,
+                'kandang_id'      => $request->kandang_id,
+            ]);
 
-        DB::commit();
-        return redirect()->route('sistem.masuk.index')
-            ->with('success', 'Data ayam berhasil diperbarui!');
-    } catch (\Exception $e) {
-        DB::rollback();
-        return redirect()->back()
-            ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-            ->withInput();
+            // Fields that affect pakan
+            $changed = array_keys($ayam->getChanges());
+            $affect = ['tanggal_masuk','rentang_hari','qty_ayam'];
+
+            // Regenerate dependent data if needed
+            if (array_intersect($changed, $affect)) {
+                (new PopulasiGeneratorService())->generateFromAyam($ayam->id_ayam);
+                (new MonitoringGeneratorService())->generateFromAyam($ayam->id_ayam);
+                (new MonitoringPakanGeneratorService)
+                    ->generateDeltaFromAyam(
+                        $ayam->id_ayam,
+                        $oldMasuk,
+                        $oldSelesai,
+                        $newMasuk,
+                        $newSelesai
+                    );
+            }
+
+            DB::commit();
+            return redirect()->route('sistem.masuk.index')
+                             ->with('success', 'Data ayam berhasil diperbarui!');
+        } catch (\Exception $e) {
+            DB::rollback();
+            return redirect()->back()
+                             ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                             ->withInput();
+        }
     }
-}
+
 
 
     public function destroy($id_ayam)
