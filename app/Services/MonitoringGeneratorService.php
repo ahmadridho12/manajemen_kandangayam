@@ -61,42 +61,51 @@ class MonitoringGeneratorService
     }
 
     public function generateFromAyam($ayamId)
-    {
-        $ayam = Ayam::findOrFail($ayamId);
-        $startDate = Carbon::parse($ayam->tanggal_masuk);
-        $rentangHari = $ayam->rentang_hari; // Ambil rentang hari dari data ayam
-    
-        // Generate data sesuai rentang hari yang diinput
-        for ($day = 0; $day <= $rentangHari; $day++) {
-            $currentDate = $startDate->copy()->addDays($day);
-    
-            // Ambil standar berat dan pertumbuhan untuk hari ini
-            $standard = $this->standardWeight[$day] ?? [
-                'bw' => $this->estimateWeight($day),
-                'dg' => $this->estimateDailyGain($day)
-            ];
-    
-            // Buat record monitoring untuk hari ini
-            $monitoring = new MonitoringAyam();
-    
-            $monitoring->ayam_id = $ayam->id_ayam;
-            $monitoring->age_day = $day;
-            $monitoring->tanggal = $currentDate;
-    
-            // Hanya untuk hari ke-0
-            if ($day === 0) {
-                $monitoring->kandang_id = $ayam->kandang_id ?? null;
-                $monitoring->body_weight = 0;  // Nilai default untuk hari pertama
-                $monitoring->daily_gain = 0;   // Nilai default untuk hari pertama
-            } else {
-                $monitoring->kandang_id = $ayam->kandang_id ?? null;
-                $monitoring->body_weight = $standard['bw']; 
-                $monitoring->daily_gain = $standard['dg'];
-            }
-    
-            $monitoring->save();
+{
+    $ayam = Ayam::findOrFail($ayamId);
+    $startDate = Carbon::parse($ayam->tanggal_masuk);
+    $rentangHariBaru = $ayam->rentang_hari;
+
+    // Ambil hari terakhir yang sudah ada di monitoring
+    $monitoringTerakhir = MonitoringAyam::where('ayam_id', $ayam->id_ayam)
+        ->orderByDesc('age_day')
+        ->first();
+
+    $hariTerakhirTersimpan = $monitoringTerakhir ? $monitoringTerakhir->age_day : -1;
+
+    // Hapus jika ada data melebihi rentang baru (kalau rentang dikurangi)
+    MonitoringAyam::where('ayam_id', $ayam->id_ayam)
+        ->where('age_day', '>', $rentangHariBaru)
+        ->delete();
+
+    // Tambahkan data baru jika rentang bertambah
+    for ($day = $hariTerakhirTersimpan + 1; $day <= $rentangHariBaru; $day++) {
+        $currentDate = $startDate->copy()->addDays($day);
+
+        $standard = $this->standardWeight[$day] ?? [
+            'bw' => $this->estimateWeight($day),
+            'dg' => $this->estimateDailyGain($day)
+        ];
+
+        $monitoring = new MonitoringAyam();
+        $monitoring->ayam_id = $ayam->id_ayam;
+        $monitoring->age_day = $day;
+        $monitoring->tanggal = $currentDate;
+        $monitoring->kandang_id = $ayam->kandang_id ?? null;
+
+        if ($day === 0) {
+            $monitoring->body_weight = 0;
+            $monitoring->daily_gain = 0;
+        } else {
+            $monitoring->body_weight = $standard['bw'];
+            $monitoring->daily_gain = $standard['dg'];
         }
+
+        $monitoring->save();
     }
+}
+
+
 
     private function estimateWeight($day)
     {

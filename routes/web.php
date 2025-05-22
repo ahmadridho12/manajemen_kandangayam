@@ -97,6 +97,7 @@ Route::middleware(['auth', 'session.timeout'])->group(function () {
         Route::get('/monitoring/create', [MonitoringAyamController::class, 'create'])->name('monitoring.create');
         Route::post('/monitoring/store', [MonitoringAyamController::class, 'store'])->name('monitoring.store');
         Route::get('/inventory/monitoring/print', [\App\Http\Controllers\MonitoringAyamController::class, 'print'])->name('monitoring.print');
+        Route::put('/monitoring/update/{id}', [MonitoringAyamController::class, 'update'])->name('monitoring.update');
 
 
     });

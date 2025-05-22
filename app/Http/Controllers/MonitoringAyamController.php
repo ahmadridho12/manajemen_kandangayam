@@ -119,6 +119,34 @@ class MonitoringAyamController extends Controller
                 ->with('error', $e->getMessage());
         }
     }
+
+    public function update(Request $request, $id)
+{
+    $request->validate([
+        'skat_1_bw' => 'required|numeric|min:0',
+        'skat_2_bw' => 'required|numeric|min:0',
+        'skat_3_bw' => 'required|numeric|min:0',
+        'skat_4_bw' => 'required|numeric|min:0',
+    ]);
+
+    DB::beginTransaction();
+    try {
+        $service = new MonitoringGeneratorService();
+        $service->updateMeasurement($id, [
+            'skat_1_bw' => $request->skat_1_bw,
+            'skat_2_bw' => $request->skat_2_bw,
+            'skat_3_bw' => $request->skat_3_bw,
+            'skat_4_bw' => $request->skat_4_bw,
+        ]);
+
+        DB::commit();
+        return redirect()->route('inventory.monitoring.index')->with('success', 'Data berhasil diupdate.');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Gagal update: ' . $e->getMessage());
+    }
+}
+
     public function print(Request $request) 
 {
     $query = MonitoringAyam::query();

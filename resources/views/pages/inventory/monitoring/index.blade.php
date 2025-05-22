@@ -85,6 +85,7 @@
                     
                     <th rowspan="2" width="15%" style="font-size: 14px; text-align: center; vertical-align: middle; background-color: #10b93d; color:white">{{ __('Body Weight') }}</th>
                     <th rowspan="2" width="15%" style="font-size: 14px;  text-align: center; vertical-align: middle; background-color: #10b93d; color:white">{{ __('Daily Again') }}</th>
+                    <th rowspan="2" width="15%" style="font-size: 14px;  text-align: center; vertical-align: middle; background-color: #10b93d; color:white">{{ __('Action') }}</th>
                 </tr>
                 <tr>
                     <th width="5%" style="font-size: 14px; background-color: #10B981; color:white">BW</th>
@@ -144,17 +145,20 @@
                    
                             
                             <td>
-                                {{-- <button class="btn btn-info btn-sm btn-edit"
-                                        data-id="{{ $p->id_populasi }}"
-                                        data-tanggal="{{ $p->tanggal }}"
-                                        data-day="{{ $p->day }}"
-                                        data-qty_now="{{ $p->qty_now }}"
-                                        data-qty_mati="{{ $p->qty_mati }}"
-                                        data-qty_panen="{{ $p->qty_panen }}"
-                                        data-total="{{ $p->total }}"
-                                        >
-                                    {{ __('menu.general.edit') }}
-                                </button> --}}
+                                
+                                <button 
+                                    class="btn btn-info btn-sm btn-edit"
+                                    data-id="{{ $mt->id }}"
+                                    data-tanggal="{{ $mt->tanggal }}"
+                                    data-skat_1_bw="{{ $mt->skat_1_bw }}"
+                                    data-skat_2_bw="{{ $mt->skat_2_bw }}"
+                                    data-skat_3_bw="{{ $mt->skat_3_bw }}"
+                                    data-skat_4_bw="{{ $mt->skat_4_bw }}"
+                                >
+                                    Edit
+                                </button>
+                        
+
                                 <form action="" class="d-inline" method="post">
                                     @csrf
                                     @method('DELETE')
@@ -180,64 +184,57 @@
 
     {!! $data->appends(['search' => $search])->links() !!} 
 
-    <!-- Create Modal -->
-    {{-- <div class="modal fade" id="createModal" data-bs-backdrop="static" tabindex="-1">
-        <div class="modal-dialog">
-            <form class="modal-content" method="post" action="{{ route('lainnya.kandang.store') }}">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="createModalTitle">{{ __('menu.general.create') }}</h5>
-                    <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
-                    ></button>
-                </div>
-                <div class="modal-body">
-                    <x-input-form name="nama_kandang" :label="__('Nama Kandang')"/>
-                    <x-input-form name="tanggal_mulai" :label="__('Tanggal Mulai')" type="date"/>
-                    <x-input-form name="tanggal_selesai" :label="__('Tanggal Selesai')" type="date"/>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        {{ __('menu.general.cancel') }}
-                    </button>
-                    <button type="submit" class="btn btn-primary">{{ __('menu.general.save') }}</button>
-                </div>
-            </form>
+   <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" id="editForm">
+      @csrf
+      @method('PUT')
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editModalLabel">Edit Monitoring Ayam</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
-    </div> --}}
+        <div class="modal-body">
+          <input type="hidden" name="tanggal_monitoring" id="editTanggal">
 
-    <!-- Edit Modal -->
-    {{-- <div class="modal fade" id="editModal" data-bs-backdrop="static" tabindex="-1">
-        <div class="modal-dialog">
-            <form class="modal-content" method="post" action="">
-                @csrf
-                @method('PUT')
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editModalTitle">{{ __('menu.general.edit') }}</h5>
-                    <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
-                    ></button>
-                </div>
-                
-                <div class="modal-body">
-                    <input type="hidden" name="id" id="id" value="">
-                    <x-input-form name="nama_kandang" :label="__('Nama Kandang')" id="nama_kandang"/>
-                    <x-input-form name="tanggal_mulai" :label="__('Tanggal Mulai')" type="date" id="tanggal_mulai"/>
-                    <x-input-form name="tanggal_selesai" :label="__('Tanggal Selesai')" type="date" id="tanggal_selesai"/>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-                        {{ __('menu.general.cancel') }}
-                    </button>
-                    <button type="submit" class="btn btn-primary">{{ __('menu.general.update') }}</button>
-                </div>
-            </form>
+          <div class="mb-3">
+            <label for="skat_1_bw" class="form-label">Skat 1 BW</label>
+            <input type="number" name="skat_1_bw" id="skat_1_bw" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="skat_2_bw" class="form-label">Skat 2 BW</label>
+            <input type="number" name="skat_2_bw" id="skat_2_bw" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="skat_3_bw" class="form-label">Skat 3 BW</label>
+            <input type="number" name="skat_3_bw" id="skat_3_bw" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="skat_4_bw" class="form-label">Skat 4 BW</label>
+            <input type="number" name="skat_4_bw" id="skat_4_bw" class="form-control" required>
+          </div>
         </div>
-    </div> --}}
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Simpan</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+@push('script')
+<script>
+  $(document).on('click', '.btn-edit', function () {
+    const id = $(this).data('id');
+    $('#editForm').attr('action', '{{ route('inventory.monitoring.update', '') }}/' + id);
+    $('#editTanggal').val($(this).data('tanggal'));
+    $('#skat_1_bw').val($(this).data('skat_1_bw'));
+    $('#skat_2_bw').val($(this).data('skat_2_bw'));
+    $('#skat_3_bw').val($(this).data('skat_3_bw'));
+    $('#skat_4_bw').val($(this).data('skat_4_bw'));
+    $('#editModal').modal('show');
+  });
+</script>
+@endpush
+
 @endsection
