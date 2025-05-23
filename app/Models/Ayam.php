@@ -38,6 +38,7 @@ class Ayam extends Model
     {
         return $this->belongsTo(Kandang::class, 'kandang_id', 'id_kandang'); // Relasi ke model Sekat berdasarkan kandang_id
     }
+    
     public function hargaAyam()
 {
     return $this->hasOne(HargaAyam::class, 'ayam_id', 'id_ayam');

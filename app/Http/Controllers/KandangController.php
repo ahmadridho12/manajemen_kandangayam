@@ -43,6 +43,8 @@ class KandangController extends Controller
     {
         $request->validate([
             'nama_kandang' => 'required|string|max:255',
+            'jumlah_skat' => 'required|integer|min:1',
+
             // 'tanggal_mulai' => 'required|date',
             // 'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
         ]);
@@ -63,6 +65,8 @@ class KandangController extends Controller
     {
         $request->validate([
             'nama_kandang' => 'required|string|max:255',
+            'jumlah_skat' => 'required|integer|min:1',
+
             // 'tanggal_mulai' => 'required|date',
             // 'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
         ]);

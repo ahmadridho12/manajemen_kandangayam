@@ -66,109 +66,79 @@
     <div class="card mb-5">
         <div class="table-responsive text-nowrap">
             <table class="table">
-                <thead>
-                    
+              <thead>
                 <tr>
-                    
-                    {{-- <th>{{ __('menu.general.action') }}</th> --}}
+                    <th rowspan="2" style="text-align: center; background-color: #10b93d; color: white;">No</th>
+                    <th rowspan="2" style="text-align: center; background-color: #10b93d; color: white;">Periode</th>
+                    <th rowspan="2" style="text-align: center; background-color: #10b93d; color: white;">Kandang</th>
+                    <th rowspan="2" style="text-align: center; background-color: #10b93d; color: white;">Tanggal</th>
+                    <th rowspan="2" style="text-align: center; background-color: #10b93d; color: white;">Hari</th>
 
-                    <th rowspan="2" width="2%" style="font-size: 14px;  text-align: center; vertical-align: middle; background-color: #10b93d; color:white">No</th>
-                    <th rowspan="2" width="15%" style="font-size: 14px; text-align: center; vertical-align: middle;  background-color: #10b93d; color:white">{{ __('Periode') }}</th>
-                    <th rowspan="2" width="25%" style="font-size: 14px;  text-align: center; vertical-align: middle; background-color: #10b93d; color:white">{{ __('Kandang') }}</th>
-                    <th rowspan="2" width="4%" style="font-size: 14px;  text-align: center; vertical-align: middle; background-color: #10b93d; color:white">{{ __('tanggal') }}</th>
-                    <th rowspan="2" width="8%" style="font-size: 14px; text-align: center; vertical-align: middle; background-color: #10b93d; color:white">
-                        {{ __('Hari') }}
-                    </th>                    <th colspan="2" width="30%" style="font-size: 14px; text-align: center;  background-color: #10b93d; color:white" >{{ __('Skat 1') }}</th>
-                    <th colspan="2" width="30%" style="font-size: 14px; text-align: center;  background-color: #10b93d; color:white">{{ __('Skat 2') }}</th>
-                    <th colspan="2" width="30%" style="font-size: 14px; text-align: center;  background-color: #10b93d; color:white">{{ __('Skat 3') }}</th>
-                    <th colspan="2" width="30%" style="font-size: 14px; text-align: center;  background-color: #10b93d; color:white">{{ __('Skat 4') }}</th>
-                    
-                    <th rowspan="2" width="15%" style="font-size: 14px; text-align: center; vertical-align: middle; background-color: #10b93d; color:white">{{ __('Body Weight') }}</th>
-                    <th rowspan="2" width="15%" style="font-size: 14px;  text-align: center; vertical-align: middle; background-color: #10b93d; color:white">{{ __('Daily Again') }}</th>
-                    <th rowspan="2" width="15%" style="font-size: 14px;  text-align: center; vertical-align: middle; background-color: #10b93d; color:white">{{ __('Action') }}</th>
+                    @php
+                         $maxSkat = $data->map(fn($item) => $item->kandang->jumlah_skat ?? 0)->max();
+                    @endphp
+
+                    @for ($i = 1; $i <= $maxSkat; $i++)
+                        <th colspan="2" style="text-align: center; background-color: #10b93d; color: white;">Skat {{ $i }}</th>
+                    @endfor
+
+                    <th rowspan="2" style="text-align: center; background-color: #10b93d; color: white;">Body Weight</th>
+                    <th rowspan="2" style="text-align: center; background-color: #10b93d; color: white;">Daily Gain</th>
+                    <th rowspan="2" style="text-align: center; background-color: #10b93d; color: white;">Action</th>
                 </tr>
                 <tr>
-                    <th width="5%" style="font-size: 14px; background-color: #10B981; color:white">BW</th>
-                    <th width="7%" style="font-size: 14px; background-color: #106db9; color:white">DG</th>
-                    <th width="5%" style="font-size: 14px; background-color: #10B981; color:white">BW</th>
-                    <th width="7%" style="font-size: 14px; background-color: #106db9; color:white">DG</th>
-                    <th width="5%" style="font-size: 14px; background-color: #10B981; color:white">BW</th>
-                    <th width="7%" style="font-size: 14px; background-color: #106db9; color:white">DG</th>
-                    <th width="5%" style="font-size: 14px; background-color: #10B981; color:white">BW</th>
-                    <th width="7%" style="font-size: 14px; background-color: #106db9; color:white">DG</th>
-              
-                    
+                    @for ($i = 1; $i <= $maxSkat; $i++)
+                        <th style="background-color: #10B981; color: white;">BW</th>
+                        <th style="background-color: #106db9; color: white;">DG</th>
+                    @endfor
                 </tr>
                 </thead>
+
                 @if($data && $data->count())
                     <tbody>
-                        
-                        @foreach($data as $mt)
-                        
+                    @foreach ($data as $mt)
+                    <tr>
                         <td>{{ ($data->currentPage() - 1) * $data->perPage() + $loop->iteration }}</td>
                         <td>{{ $mt->ayam->periode }}</td>
                         <td>{{ $mt->kandang->nama_kandang }}</td>
                         <td>{{ $mt->tanggal }}</td>
                         <td>{{ $mt->age_day }}</td>
-                        
-                        <td class="{{ $mt->skat_1_bw_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_1_bw }}
-                        </td>
-                        <td class="{{ $mt->skat_1_dg_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_1_dg }}
-                        </td>
-                        
-                        <td class="{{ $mt->skat_2_bw_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_2_bw }}
-                        </td>
-                        <td class="{{ $mt->skat_2_dg_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_2_dg }}
-                        </td>
-                        
-                        <td class="{{ $mt->skat_3_bw_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_3_bw }}
-                        </td>
-                        <td class="{{ $mt->skat_3_dg_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_3_dg }}
-                        </td>
-                        
-                        <td class="{{ $mt->skat_4_bw_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_4_bw }}
-                        </td>
-                        <td class="{{ $mt->skat_4_dg_status == 'above' ? 'text-green-500' : 'text-red-500' }}">
-                            {{ $mt->skat_4_dg }}
-                        </td>
-                        
+
+                        @for ($i = 1; $i <= $mt->kandang->jumlah_skat; $i++)
+                            @php
+                                $bw = $mt->{"skat_{$i}_bw"};
+                                $dg = $mt->{"skat_{$i}_dg"};
+                                $standard = \App\Services\MonitoringGeneratorService::getStandard($mt->age_day);
+                            @endphp
+                            <td class="{{ $bw >= $standard['bw'] ? 'text-green-500' : 'text-red-500' }}">
+                                {{ $bw }}
+                            </td>
+                            <td class="{{ $dg >= $standard['dg'] ? 'text-green-500' : 'text-red-500' }}">
+                                {{ $dg }}
+                            </td>
+
+                        @endfor
+
                         <td>{{ $mt->body_weight }}</td>
                         <td>{{ $mt->daily_gain }}</td>
-                        
-                   
-                            
-                            <td>
-                                
-                                <button 
-                                    class="btn btn-info btn-sm btn-edit"
-                                    data-id="{{ $mt->id }}"
-                                    data-tanggal="{{ $mt->tanggal }}"
-                                    data-skat_1_bw="{{ $mt->skat_1_bw }}"
-                                    data-skat_2_bw="{{ $mt->skat_2_bw }}"
-                                    data-skat_3_bw="{{ $mt->skat_3_bw }}"
-                                    data-skat_4_bw="{{ $mt->skat_4_bw }}"
-                                >
-                                    Edit
-                                </button>
-                        
 
-                                <form action="" class="d-inline" method="post">
-                                    @csrf
-                                    @method('DELETE')
-                                    {{-- <button class="btn btn-danger btn-sm btn-delete"
-                                            type="submit">{{ __('menu.general.delete') }}</button> --}}
-                                </form>
-                            </td>
-                        </tr>
+                        <td>
+                            <button class="btn btn-info btn-sm btn-edit"
+                                data-id="{{ $mt->id }}"
+                                data-tanggal="{{ $mt->tanggal }}"
+                                data-jumlah-skat="{{ $mt->kandang->jumlah_skat }}"
+                                @for ($i = 1; $i <= $mt->kandang->jumlah_skat; $i++)
+                                    data-skat_{{ $i }}_bw="{{ $mt->{'skat_'.$i.'_bw'} }}"
+                                @endfor
+                            >
+                                Edit
+                            </button>
+
+                        </td>
+                    </tr>
                     @endforeach
                     </tbody>
+
                 @else
                     <tbody>
                     <tr>
@@ -184,7 +154,7 @@
 
     {!! $data->appends(['search' => $search])->links() !!} 
 
-   <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <form method="POST" id="editForm">
       @csrf
@@ -196,24 +166,13 @@
         </div>
         <div class="modal-body">
           <input type="hidden" name="tanggal_monitoring" id="editTanggal">
+          <input type="hidden" name="jumlah_skat" id="jumlahSkat">
 
-          <div class="mb-3">
-            <label for="skat_1_bw" class="form-label">Skat 1 BW</label>
-            <input type="number" name="skat_1_bw" id="skat_1_bw" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label for="skat_2_bw" class="form-label">Skat 2 BW</label>
-            <input type="number" name="skat_2_bw" id="skat_2_bw" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label for="skat_3_bw" class="form-label">Skat 3 BW</label>
-            <input type="number" name="skat_3_bw" id="skat_3_bw" class="form-control" required>
-          </div>
-          <div class="mb-3">
-            <label for="skat_4_bw" class="form-label">Skat 4 BW</label>
-            <input type="number" name="skat_4_bw" id="skat_4_bw" class="form-control" required>
+          <div class="row" id="edit-skat-inputs">
+              {{-- Input akan dibuat via JavaScript --}}
           </div>
         </div>
+
         <div class="modal-footer">
           <button type="submit" class="btn btn-primary">Simpan</button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
@@ -222,19 +181,44 @@
     </form>
   </div>
 </div>
+
 @push('script')
 <script>
+  function generateEditSkatInputs(jumlahSkat, data) {
+    const container = document.getElementById('edit-skat-inputs');
+    container.innerHTML = '';
+
+    for (let i = 1; i <= jumlahSkat; i++) {
+      const inputValue = data[`skat_${i}_bw`] || '';
+      const div = document.createElement('div');
+      div.classList.add('col-sm-12', 'col-12', 'col-md-6', 'col-lg-3');
+      div.innerHTML = `
+        <label for="skat_${i}_bw" class="form-label">Skat ${i} BW</label>
+        <input type="number" name="skat_${i}_bw" id="skat_${i}_bw" class="form-control" step="0.01" value="${inputValue}" required>
+      `;
+      container.appendChild(div);
+    }
+  }
+
   $(document).on('click', '.btn-edit', function () {
     const id = $(this).data('id');
-    $('#editForm').attr('action', '{{ route('inventory.monitoring.update', '') }}/' + id);
-    $('#editTanggal').val($(this).data('tanggal'));
-    $('#skat_1_bw').val($(this).data('skat_1_bw'));
-    $('#skat_2_bw').val($(this).data('skat_2_bw'));
-    $('#skat_3_bw').val($(this).data('skat_3_bw'));
-    $('#skat_4_bw').val($(this).data('skat_4_bw'));
+    const tanggal = $(this).data('tanggal');
+    const jumlahSkat = parseInt($(this).data('jumlah-skat')) || 4;
+
+    const data = {};
+    for (let i = 1; i <= jumlahSkat; i++) {
+      data[`skat_${i}_bw`] = $(this).data(`skat_${i}_bw`);
+    }
+
+    $('#editForm').attr('action', '/inventory/monitoring/' + id);
+    $('#editTanggal').val(tanggal);
+    $('#jumlahSkat').val(jumlahSkat);
+    
+    generateEditSkatInputs(jumlahSkat, data);
     $('#editModal').modal('show');
   });
 </script>
 @endpush
+
 
 @endsection

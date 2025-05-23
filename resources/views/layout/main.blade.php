@@ -46,6 +46,7 @@
 
     <!-- Page CSS -->
     @stack('style')
+    @stack('scripts')
 
     <!-- Helpers -->
     <script src="{{ asset('sneat/vendor/js/helpers.js') }}"></script>

@@ -14,7 +14,7 @@ class MonitoringAyam extends Model
     protected $table = 'monitoring_ayam';
     protected $primaryKey = 'id';
     protected $fillable = [
-        'id_ayam',
+        'ayam_id',
         'id_kandang',
         'tanggal',
         'age_day',
@@ -26,6 +26,14 @@ class MonitoringAyam extends Model
         'skat_3_dg',
         'skat_4_bw',
         'skat_4_dg',
+        'skat_5_bw',
+        'skat_5_dg',
+        'skat_6_bw',
+        'skat_6_dg',
+        'skat_7_bw',
+        'skat_7_dg',
+        'skat_8_bw',
+        'skat_8_dg',
         'tanggal_monitoring',
         'body_weight',
         'daily_gain',

@@ -12,12 +12,12 @@ class Kandang extends Model
 
     protected $table = 'kandang';
     protected $primaryKey = 'id_kandang'; // Menentukan primary key
-    protected $fillable = ['nama_kandang', 'tanggal_mulai', 'tanggal_selesai'];
+    protected $fillable = ['nama_kandang', 'tanggal_mulai', 'tanggal_selesai', 'jumlah_skat'];
 
-    public function sekats()
-    {
-        return $this->hasMany(Sekat::class, 'id_kandang', 'kandang_id');
-    }
+    // public function sekats()
+    // {
+    //     return $this->hasMany(Sekat::class, 'id_kandang', 'kandang_id');
+    // }
     // Di model Kandang
     public function ayam()
     {

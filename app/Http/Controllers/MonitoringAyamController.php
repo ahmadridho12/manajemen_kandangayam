@@ -19,7 +19,8 @@ class MonitoringAyamController extends Controller
         $search = $request->input('search'); // Pencarian berdasarkan tanggal
         $id_ayam = $request->input('id_ayam'); // Filter ayam berdasarkan periode
         $id_kandang = $request->input('id_kandang'); // Filter berdasarkan kandang
-    
+        $ayams = Ayam::with('kandang')->get(); // pastikan relasi kandang dimuat
+
         $query = MonitoringAyam::query()
             ->join('ayam', 'monitoring_ayam.ayam_id', '=', 'ayam.id_ayam')
             ->join('kandang', 'ayam.kandang_id', '=', 'kandang.id_kandang');
@@ -53,6 +54,7 @@ class MonitoringAyamController extends Controller
         return view('pages.inventory.monitoring.index', [
             'data' => $data,
             'search' => $search,
+            'ayams' => $ayams,
             'ayams' => Ayam::all(),
             'id_ayam' => $id_ayam, // Pastikan ini tetap tersimpan di filter
             'kandangs' => \App\Models\Kandang::all(),
@@ -60,90 +62,103 @@ class MonitoringAyamController extends Controller
     }
     
     public function create()
+{
+    $ayams = \App\Models\Ayam::with('kandang')->get(); // <- fix relasi kandang
+    $kandangs = Kandang::all();
+
+    return view('pages.inventory.monitoring.add', [
+        'ayams' => $ayams,
+        'kandangs' => $kandangs
+    ]);
+}
+
+
+  public function store(Request $request)
     {
-        // $sekats = Sekat::all();
-        $ayams = \App\Models\Ayam::all(); // Mengambil semua data dari tabel unit
+        // Ambil data ayam beserta kandang
+        $ayam = Ayam::with('kandang')->findOrFail($request->ayam_id);
+        $jumlahSkat = $ayam->kandang->jumlah_skat ?? 4;
 
-        $kandangs = Kandang::all();
-        // $sekats = Sekat::all(); // Mengambil semua sekat untuk dropdown
-        return view('pages.inventory.monitoring.add', [
-            // 'sekats' => $sekats,
-            'kandangs' => $kandangs,
-            'ayams' => $ayams
-        ]);
-    }
-
-
-    public function store(Request $request)
-    {
-        $request->validate([
+        // Validasi dasar
+        $rules = [
             'ayam_id' => 'required|exists:ayam,id_ayam',
+            'tanggal_monitoring' => 'required|date|before_or_equal:today',
+        ];
 
-            'skat_1_bw' => 'required|integer|min:0',
-            'skat_2_bw' => 'required|integer|min:0',
-            'skat_3_bw' => 'required|integer|min:0',
-            'skat_4_bw' => 'required|integer|min:0',
-            'tanggal_monitoring' => 'required|date',
-        ]);
-    
-        DB::beginTransaction();
+        // Validasi dinamis berdasarkan jumlah skat kandang
+        for ($i = 1; $i <= $jumlahSkat; $i++) {
+            $rules["skat_{$i}_bw"] = 'required|numeric|min:0|max:3500';
+        }
+
+        $validated = $request->validate($rules);
+
+        // Hitung usia ayam berdasarkan tanggal masuk
+        $tanggalMonitoring = Carbon::parse($validated['tanggal_monitoring']);
+        $tanggalMasuk = Carbon::parse($ayam->tanggal_masuk);
+        $ageDay = $tanggalMonitoring->diffInDays($tanggalMasuk);
+
+        // Cek apakah data monitoring hari ini sudah ada
+        $existing = MonitoringAyam::where('ayam_id', $validated['ayam_id'])
+            ->where('age_day', $ageDay)
+            ->first();
+
         try {
-            // Cari record monitoring berdasarkan tanggal
-            $monitoring = MonitoringAyam::where('ayam_id', $request->ayam_id)->first();
-            $monitoring = MonitoringAyam::where('tanggal', $request->tanggal_monitoring)->first();
-            
-            if (!$monitoring) {
-                throw new \Exception('Data monitoring untuk tanggal tersebut tidak ditemukan!');
+            $service = app(MonitoringGeneratorService::class);
+
+            if ($existing) {
+                // Update manual jika sudah ada data
+                $service->updateManualMonitoring($existing->id, $validated);
+                $message = "Data monitoring sampling hari ke-{$ageDay} berhasil diupdate";
+            } else {
+                // Simpan manual baru
+                $service->storeManualMonitoring($validated);
+                $message = 'Data monitoring sampling berhasil ditambahkan';
             }
-    
-            // Gunakan MonitoringGeneratorService
-            $monitoringService = new MonitoringGeneratorService();
-            
-            // Update measurement menggunakan service
-            $monitoring = $monitoringService->updateMeasurement(
-                $monitoring->id,
-                [
-                    'skat_1_bw' => $request->input('skat_1_bw'),
-                    'skat_2_bw' => $request->input('skat_2_bw'),
-                    'skat_3_bw' => $request->input('skat_3_bw'),
-                    'skat_4_bw' => $request->input('skat_4_bw'),
-                ]
-            );
-    
-            DB::commit();
+
             return redirect()->route('inventory.monitoring.index')
-                ->with('success', 'Monitoring berhasil diupdate!');
+                ->with('success', $message);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()->route('inventory.monitoring.index')
-                ->with('error', $e->getMessage());
+            return redirect()->back()
+                ->withErrors('Gagal menyimpan data: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
-    public function update(Request $request, $id)
+/**
+ * Update method yang sudah diperbaiki
+ */
+public function update(Request $request, $id)
 {
-    $request->validate([
-        'skat_1_bw' => 'required|numeric|min:0',
-        'skat_2_bw' => 'required|numeric|min:0',
-        'skat_3_bw' => 'required|numeric|min:0',
-        'skat_4_bw' => 'required|numeric|min:0',
-    ]);
+    $monitoring = MonitoringAyam::with('ayam.kandang')->findOrFail($id);
+    $jumlahSkat = $monitoring->ayam->kandang->jumlah_skat ?? 4;
+    
+    $rules = [];
+    $messages = [];
+
+    // Validasi berat sampel ayam dalam gram
+    for ($i = 1; $i <= $jumlahSkat; $i++) {
+        $rules["skat_{$i}_bw"] = 'required|numeric|min:0|max:3500'; // max 3500 gram
+        $messages["skat_{$i}_bw.required"] = "Berat sampel ayam skat {$i} wajib diisi";
+        $messages["skat_{$i}_bw.numeric"] = "Berat sampel ayam skat {$i} harus berupa angka";
+        $messages["skat_{$i}_bw.min"] = "Berat sampel ayam skat {$i} tidak boleh negatif";
+        $messages["skat_{$i}_bw.max"] = "Berat sampel ayam skat {$i} maksimal 3500 gram";
+    }
+
+    $validated = $request->validate($rules, $messages);
 
     DB::beginTransaction();
     try {
         $service = new MonitoringGeneratorService();
-        $service->updateMeasurement($id, [
-            'skat_1_bw' => $request->skat_1_bw,
-            'skat_2_bw' => $request->skat_2_bw,
-            'skat_3_bw' => $request->skat_3_bw,
-            'skat_4_bw' => $request->skat_4_bw,
-        ]);
+        $service->updateManualMonitoring($id, $validated);
 
         DB::commit();
-        return redirect()->route('inventory.monitoring.index')->with('success', 'Data berhasil diupdate.');
+        return redirect()->route('inventory.monitoring.index')
+            ->with('success', 'Data monitoring sampling berhasil diupdate.');
     } catch (\Exception $e) {
         DB::rollBack();
-        return redirect()->back()->with('error', 'Gagal update: ' . $e->getMessage());
+        return redirect()->back()
+            ->withErrors('Gagal update: ' . $e->getMessage())
+            ->withInput();
     }
 }
 
